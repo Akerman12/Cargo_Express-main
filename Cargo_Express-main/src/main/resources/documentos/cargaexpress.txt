@@ -1,0 +1,26 @@
+CARGA EXPRESS - DESCRIPCION GENERAL DEL SISTEMA
+
+Carga Express es una aplicación desarrollada con Java y Spring Boot para gestionar operaciones de envío y transporte de paquetes. El código revisado contiene módulos para usuarios, guías, direcciones, pagos, rastreo, repartidores, administración, soporte y asistencia mediante SAI-Bot.
+
+ARQUITECTURA Y COMPONENTES IDENTIFICADOS
+- Controladores web y REST gestionan las solicitudes de la aplicación.
+- Los servicios contienen lógica de negocio, entre ellos GuiaService, PriceCalculatorService, UsuarioService, WekaService, PdfService, EmailService y MongoSyncService.
+- Los repositorios Spring Data JPA consultan y persisten entidades en la base relacional.
+- Existen repositorios MongoDB y modelos Mongo para sincronización de información.
+- SAI-Bot utiliza ChatRagService, DocumentService y herramientas para consultar el estado de guías y calcular costos.
+
+ENTIDADES PRINCIPALES
+- Usuario: contiene nombre, username, contraseña, rol, aprobación y correo electrónico.
+- Guia: registra remitente, destinatario, direcciones, ciudades, departamentos, tipo de carga, peso, dimensiones, valor declarado, precio, estados, usuario y repartidor asignado.
+- Pago: registra monto, método, fecha, titular y guía asociada.
+- Direccion: almacena alias, contacto, dirección, ciudad, departamento, teléfono y usuario propietario.
+- Rol: ROLE_CLIENTE, ROLE_REPARTIDOR y ROLE_ADMIN.
+
+DATOS Y PERSISTENCIA
+El código incluye repositorios JPA para usuarios, guías, pagos, direcciones y tokens de recuperación de contraseña. También incluye repositorios MongoDB para usuarios, guías, pagos y direcciones, además de MongoSyncService para sincronización.
+
+REGLAS PARA SAI-BOT
+SAI-Bot debe responder en español, de forma clara, breve y profesional. Debe basarse en los documentos recuperados y en las herramientas disponibles. No debe inventar tarifas, estados, resultados ni información. Si no encuentra evidencia suficiente, debe indicarlo claramente.
+
+LIMITES DE ESTA DOCUMENTACION
+Este documento resume clases y componentes identificados en el código fuente compartido. No describe funcionalidades que no estén demostradas por esos archivos. Para consultas de datos personales o información dinámica, SAI-Bot debe usar únicamente herramientas autorizadas y no revelar información de otros usuarios.

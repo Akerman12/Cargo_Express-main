@@ -1,0 +1,30 @@
+@relation empaque_sugerido
+
+@attribute peso numeric
+@attribute ancho numeric
+@attribute alto numeric
+@attribute tipo_empaque {'Sobre de Documentos', 'Paquete Pequeño (Hasta 5kg)', 'Caja Estándar', 'Caja Grande', 'Carga Frágil', 'Paletizado'}
+
+@data
+0.1,20,10,'Sobre de Documentos'
+0.3,30,20,'Sobre de Documentos'
+0.5,15,5,'Sobre de Documentos'
+1.0,25,20,'Sobre de Documentos'
+2.0,30,30,'Paquete Pequeño (Hasta 5kg)'
+4.0,35,35,'Paquete Pequeño (Hasta 5kg)'
+3.5,40,20,'Paquete Pequeño (Hasta 5kg)'
+5.0,40,40,'Paquete Pequeño (Hasta 5kg)'
+7.0,50,50,'Caja Estándar'
+10.0,60,60,'Caja Estándar'
+15.0,55,55,'Caja Estándar'
+12.0,45,45,'Caja Estándar'
+20.0,80,80,'Caja Grande'
+30.0,100,100,'Caja Grande'
+40.0,90,90,'Caja Grande'
+25.0,70,70,'Caja Grande'
+50.0,120,120,'Paletizado'
+100.0,150,150,'Paletizado'
+80.0,130,130,'Paletizado'
+2.0,20,20,'Carga Frágil'
+5.0,30,30,'Carga Frágil'
+1.0,15,15,'Carga Frágil'

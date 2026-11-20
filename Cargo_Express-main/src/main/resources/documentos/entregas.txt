@@ -1,0 +1,32 @@
+CARGA EXPRESS - ENTREGAS, RECOGIDAS Y RASTREO
+
+FLUJO DE RECOGIDA Y ENTREGA
+1. Cuando un cliente crea una guia, inicia en estado Pendiente.
+2. El administrador asigna primero un repartidor de recogida que opere en la region de origen. La recogida puede planificarse en una ruta multi-parada.
+3. En campo, el repartidor marca el paquete como Recogido o reporta No Recogido con un motivo.
+4. Al finalizar la recogida y llegar a la sucursal, los paquetes recogidos pasan a estado En Sucursal.
+5. Una vez que la guia esta En Sucursal, el administrador habilita la asignacion de entrega con un repartidor de la region de destino.
+6. Al iniciar la ruta de entrega multi-parada, las guias pasan a En Transito.
+7. En el destino final el repartidor confirma la entrega con firma (Entregado) o reporta una Novedad con motivo.
+
+ESTADOS OFICIALES DE UNA GUIA
+- Pendiente: guia creada, esperando recoleccion en origen.
+- Recogido: el repartidor recolecto el paquete en la direccion de origen.
+- No Recogido: no se pudo recolectar en origen (se registra el motivo y vuelve al administrador para reasignar).
+- En Sucursal: el paquete ingreso a sucursal y queda listo para asignar ruta de entrega.
+- En Transito: el paquete va en camino hacia su destino final.
+- Novedad: ocurrio un inconveniente durante el intento de entrega y se registro un motivo.
+- Entregado: el destinatario recibio el paquete y firmo la entrega.
+- Cancelado: envio cancelado.
+- Eliminada: guia ocultada del sistema.
+
+REGIONES DE OPERACION DE REPARTIDORES
+Cada repartidor opera exclusivamente en una region de Colombia: Region Caribe, Region Andina, Region Pacifica, Region de la Orinoquia, Region Amazonica o Region Insular.
+
+RASTREO
+La pagina /rastreo permite consultar una guia mediante su numero identificador. Si el estado es Eliminada no se muestra informacion publica.
+
+REGLAS PARA SAI-BOT
+- No afirmar que una guia fue entregada sin consultar su estado actual con la herramienta autorizada.
+- No inventar tiempos, ubicaciones en tiempo real ni motivos de novedad.
+- Para consultar datos personales de una guia desde el chat, el cliente debe verificar su correo con el codigo OTP.

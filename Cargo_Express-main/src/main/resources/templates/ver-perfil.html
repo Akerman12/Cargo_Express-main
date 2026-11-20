@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Perfil | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/sai-theme.css}">
+
+    <style>
+        :root {
+            /* Paleta Oficial SAI CARGO */
+            --brand-blue: #002855;       
+            --brand-blue-light: #1A4D80; 
+            --brand-orange: #FF6600;     
+            --brand-orange-hover: #E65C00;
+            --bg-main: #F4F7F9;          
+            --white: #FFFFFF;
+            --text-dark: #1E293B;        
+            --text-muted: #64748B;       
+            --border-light: #E2E8F0;
+            
+            --danger-bg: #FEE2E2;
+            --danger-text: #991B1B;
+
+            --shadow-sm: 0 2px 4px rgba(0, 40, 85, 0.04);
+            --shadow-md: 0 10px 25px rgba(0, 40, 85, 0.06);
+            --shadow-lg: 0 20px 40px rgba(0, 40, 85, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-dark);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--brand-orange); }
+
+        /* --- SIDEBAR CORPORATIVO --- */
+        .sidebar {
+            width: 270px; background: var(--white); border-right: 1px solid var(--border-light); padding: 30px 20px; position: fixed; height: 100vh; display: flex; flex-direction: column; z-index: 100; box-shadow: var(--shadow-sm);
+        }
+        .sidebar-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light); }
+        .sidebar-logo img { width: 140px; height: auto; transition: 0.3s; }
+        .sidebar-logo img:hover { transform: scale(1.05); }
+
+        .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 15px 0 10px 15px; font-weight: 700; }
+        .sidebar a { color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 10px; transition: all 0.3s ease; display: flex; align-items: center; gap: 15px; font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+        .sidebar a i { font-size: 18px; width: 20px; text-align: center; }
+        .sidebar a:hover, .sidebar a.active { background: var(--bg-main); color: var(--brand-blue); }
+        .sidebar a.btn-highlight { background: var(--brand-blue); color: var(--white); margin-top: 10px; box-shadow: 0 4px 12px rgba(0, 40, 85, 0.2); }
+        .sidebar a.btn-highlight:hover { background: var(--brand-blue-light); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 40, 85, 0.3); }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content { 
+            margin-left: 270px; 
+            flex: 1; 
+            padding: 40px 50px; 
+            display: flex; 
+            flex-direction: column; 
+            max-width: calc(100vw - 270px); 
+        }
+
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+        .header-title h1 { font-size: 28px; color: var(--brand-blue); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .header-title p { color: var(--text-muted); font-size: 14px; }
+
+        .user-pill { background: var(--white); padding: 8px 25px; border-radius: 50px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); }
+
+        /* --- CONTENEDOR DEL PERFIL --- */
+        .profile-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            width: 100%;
+        }
+
+        .profile-card {
+            background: var(--white);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-light);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Detalle decorativo superior */
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 100px;
+            background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-light) 100%);
+            z-index: 1;
+        }
+
+        /* Avatar */
+        .profile-avatar {
+            position: relative;
+            z-index: 2;
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, var(--brand-orange), #FFA726);
+            color: white;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 50px;
+            font-weight: 800;
+            box-shadow: 0 10px 25px rgba(255, 102, 0, 0.3);
+            border: 6px solid var(--white);
+        }
+
+        .profile-card h2 { font-size: 26px; font-weight: 800; color: var(--brand-blue); margin-bottom: 5px; position: relative; z-index: 2; }
+        .username { color: var(--text-muted); font-size: 15px; margin-bottom: 20px; position: relative; z-index: 2; }
+
+        .badge-rol {
+            display: inline-block;
+            background: #E0F2FE;
+            color: var(--brand-blue);
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 35px;
+            border: 1px solid #BAE6FD;
+        }
+
+        /* Grid de Información */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            text-align: left;
+            margin-bottom: 35px;
+        }
+
+        .info-item {
+            background: var(--bg-main);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border-light);
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .info-item:hover {
+            border-color: var(--brand-blue-light);
+            background: var(--white);
+            box-shadow: 0 5px 15px rgba(0, 40, 85, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .info-item label { font-size: 12px; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+        .info-item label i { color: var(--brand-blue-light); font-size: 14px; }
+        .info-item span { font-size: 16px; font-weight: 600; color: var(--text-dark); }
+
+        /* Tarjeta Destacada de Estadísticas */
+        .stat-card {
+            grid-column: span 2;
+            background: linear-gradient(135deg, var(--white) 0%, #FFF7ED 100%);
+            border: 1px solid #FED7AA;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 25px;
+        }
+        .stat-card label i { color: var(--brand-orange); }
+        .stat-card span { font-size: 32px; font-weight: 800; color: var(--brand-orange); }
+
+        /* Sello Legal Perfil */
+        .legal-note {
+            font-size: 12px;
+            color: var(--text-muted);
+            background: #F8FAFC;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid var(--border-light);
+        }
+
+        /* Botones de Acción */
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            border-top: 2px solid var(--bg-main);
+            padding-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            transition: 0.3s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-edit { background: var(--brand-blue); color: var(--white); box-shadow: 0 4px 15px rgba(0, 40, 85, 0.15); }
+        .btn-edit:hover { background: var(--brand-blue-light); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0, 40, 85, 0.25); }
+
+        .btn-logout { background: var(--danger-bg); color: var(--danger-text); border: 1px solid #FECACA; }
+        .btn-logout:hover { background: #DC2626; color: white; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(220, 38, 38, 0.2); border-color: #DC2626; }
+
+        @media (max-width: 1024px) {
+            .sidebar { width: 80px; padding: 20px 10px; }
+            .sidebar span, .nav-label, .sidebar-logo img { display: none; }
+            .sidebar-logo { border: none; margin-bottom: 20px; }
+            .sidebar-logo::after { content: '\f4df'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 24px; color: var(--brand-blue); }
+            .main-content { margin-left: 80px; max-width: calc(100vw - 80px); padding: 30px 20px; }
+            .user-pill span { display: none; }
+        }
+
+        @media (max-width: 768px) {
+            .info-grid { grid-template-columns: 1fr; }
+            .stat-card { grid-column: span 1; }
+            .actions { flex-direction: column; }
+            .btn { justify-content: center; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div th:replace="~{fragments/sai-sidebar :: sidebar('perfil')}"></div>
+
+    <main class="main-content">
+        
+        <div class="top-header">
+            <div class="header-title">
+                <h1>Identidad Digital</h1>
+                <p>Consulte la información y actividad de su cuenta.</p>
+            </div>
+            
+            <div class="user-pill">
+                <div style="text-align: right">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--brand-blue);" th:text="${#authentication.name}">Operador</div>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">ACTIVO</span>
+                </div>
+                <i class="fa-solid fa-circle-check" style="font-size: 32px; color: #10B981;"></i>
+            </div>
+        </div>
+
+        <div class="profile-wrapper">
+            <div class="profile-card">
+                
+                <div class="profile-avatar" th:text="${#strings.substring(usuario.nombre,0,1)}">U</div>
+                
+                <h2 th:text="${usuario.nombre}">Nombre Completo</h2>
+                <p class="username"><i class="fa-solid fa-at" style="font-size: 12px; margin-right: 3px;"></i><span th:text="${usuario.username}">usuario123</span></p>
+
+                <span class="badge-rol"><i class="fa-solid fa-id-badge" style="margin-right: 5px;"></i> <span th:text="${usuario.rol}">CLIENTE</span></span>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <label><i class="fa-solid fa-fingerprint"></i> ID de Registro</label>
+                        <span th:text="'#' + ${usuario.id}">#000</span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <label><i class="fa-solid fa-envelope-open-text"></i> Contacto Oficial</label>
+                        <span th:text="${usuario.username}" style="word-break: break-all; font-size: 14px;">correo@saicargo.com</span>
+                    </div>
+                    
+                    <div class="info-item stat-card">
+                        <div>
+                            <label><i class="fa-solid fa-boxes-stacked"></i> Volumen Operativo</label>
+                            <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Guías generadas históricamente</span>
+                        </div>
+                        <span th:text="${#lists.size(usuario.guias)}">0</span>
+                    </div>
+                </div>
+
+                <div class="legal-note">
+                    <i class="fa-solid fa-lock" style="color: var(--brand-blue);"></i> 
+                    Cuenta verificada y protegida bajo políticas de privacidad y cifrado.
+                </div>
+
+                <div class="actions">
+                    <a th:href="@{/usuario/editar-perfil}" class="btn btn-edit">
+                        <i class="fa-solid fa-user-pen"></i> Actualizar Datos
+                    </a>
+                    
+                    <form th:action="@{/logout}" method="post" style="margin: 0;">
+                        <button type="submit" class="btn btn-logout" onclick="this.innerHTML='<i class=\'fa-solid fa-circle-notch fa-spin\'></i> Saliendo...';">
+                            <i class="fa-solid fa-right-from-bracket"></i> Desconectar
+                        </button>
+                    </form>
+                </div>
+                
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

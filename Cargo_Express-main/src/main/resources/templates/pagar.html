@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasarela Wompi | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/slide-commit.css}">
+    <style>
+        :root {
+            --wompi-blue: #0048FF;
+            --wompi-dark: #0A1B39;
+            --wompi-light: #F4F6F9;
+            --white: #FFFFFF;
+            --border: #E5E7EB;
+            --text-main: #1F2937;
+            --text-muted: #6B7280;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background: linear-gradient(135deg, #0A1B39 0%, #1a2f58 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .wompi-widget {
+            background: var(--white);
+            width: 100%;
+            max-width: 420px;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .widget-header {
+            background: var(--wompi-light);
+            padding: 30px 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .merchant-name { font-weight: 700; font-size: 14px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .amount { font-size: 32px; font-weight: 800; color: var(--wompi-dark); display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .amount sup { font-size: 18px; top: -0.5em; position: relative; }
+
+        .widget-body {
+            padding: 25px;
+        }
+
+        .methods-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .method-btn {
+            border: 1px solid var(--border);
+            background: var(--white);
+            border-radius: 12px;
+            padding: 15px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .method-btn:hover { border-color: var(--wompi-blue); box-shadow: 0 4px 12px rgba(0, 72, 255, 0.1); }
+        .method-btn.active { border-color: var(--wompi-blue); border-width: 2px; padding: 14px 9px; background: #F8FAFF; }
+        
+        .method-btn i { font-size: 24px; color: var(--wompi-dark); }
+        .method-btn span { font-size: 12px; font-weight: 600; color: var(--text-main); }
+        .method-btn.active i { color: var(--wompi-blue); }
+
+        .form-section { display: none; animation: fadeIn 0.3s ease; }
+        .form-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-group input:focus, .input-group select:focus { border-color: var(--wompi-blue); }
+
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--wompi-blue);
+            color: var(--white);
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-submit:hover { background: #0036cc; }
+
+        .widget-footer {
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            background: #FAFAFA;
+        }
+
+        .wompi-logo {
+            font-weight: 900;
+            font-size: 22px;
+            color: var(--wompi-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            letter-spacing: -1px;
+        }
+        .wompi-logo span { color: var(--wompi-blue); font-size: 26px; line-height: 1; }
+
+        .secure-badge {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-weight: 500;
+        }
+
+        /* Simulator Overlay */
+        #simLoader {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.95);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .wompi-spinner {
+            width: 50px; height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--wompi-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .cancel-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .cancel-link:hover { color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+    <div class="wompi-widget">
+        <div id="simLoader">
+            <div class="wompi-spinner"></div>
+            <h3 style="color: var(--wompi-dark); font-weight: 800; font-size: 18px;">Procesando con Wompi</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">Conectando con tu banco y asegurando la transacción...</p>
+        </div>
+
+        <div class="widget-header">
+            <div class="merchant-name">SAI CARGO EXPRESS</div>
+            <div class="amount">
+                <sup>$</sup><span th:text="${#numbers.formatDecimal(guia.precio, 1, 0)}">0</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;" th:text="'Ref: SAI-' + ${guia.id}"></div>
+        </div>
+
+        <div class="widget-body">
+            <form th:action="@{/pago/procesar}" method="post" id="wompiForm">
+                <input type="hidden" name="guiaId" th:value="${guia.id}">
+                <input type="hidden" name="metodo" id="selectedMethod" value="TARJETA">
+
+                <div class="methods-grid">
+                    <div class="method-btn active" onclick="setMethod('TARJETA', this)">
+                        <i class="fa-regular fa-credit-card"></i>
+                        <span>Tarjeta</span>
+                    </div>
+                    <div class="method-btn" onclick="setMethod('NEQUI', this)">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                        <span>Nequi</span>
+                    </div>
+                    <div class="method-btn" onclick="setMethod('BANCOLOMBIA', this)">
+                        <i class="fa-solid fa-building-columns"></i>
+                        <span>Bancolombia</span>
+                    </div>
+                    <div class="method-btn" onclick="setMethod('PSE', this)">
+                        <i class="fa-solid fa-money-bill-transfer"></i>
+                        <span>PSE</span>
+                    </div>
+                </div>
+
+                <!-- SECCION TARJETA -->
+                <div class="form-section active" id="sec-TARJETA">
+                    <div class="input-group">
+                        <label>Número de Tarjeta</label>
+                        <input type="text" placeholder="0000 0000 0000 0000" id="ccNum" maxlength="19" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Nombre del Titular</label>
+                        <input type="text" placeholder="Como aparece en la tarjeta" name="titularCard" required>
+                    </div>
+                    <div class="row-2">
+                        <div class="input-group">
+                            <label>Vencimiento</label>
+                            <input type="text" placeholder="MM/YY" id="ccExp" maxlength="5" required>
+                        </div>
+                        <div class="input-group">
+                            <label>CVC</label>
+                            <input type="password" placeholder="123" maxlength="4" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCION NEQUI -->
+                <div class="form-section" id="sec-NEQUI">
+                    <div class="input-group">
+                        <label>Celular Nequi</label>
+                        <input type="text" placeholder="300 000 0000" name="celularNequi" id="nqPhone" maxlength="10">
+                    </div>
+                    <div class="input-group">
+                        <label>Nombre del Titular</label>
+                        <input type="text" placeholder="Tu nombre completo" name="titularNequi">
+                    </div>
+                </div>
+
+                <!-- SECCION BANCOLOMBIA -->
+                <div class="form-section" id="sec-BANCOLOMBIA">
+                    <div class="input-group">
+                        <label>Tipo de Cuenta</label>
+                        <select name="tipoCuentaBancolombia">
+                            <option value="ahorros">Ahorros</option>
+                            <option value="corriente">Corriente</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Número de Cuenta</label>
+                        <input type="text" placeholder="Ej: 123456789" name="numeroCuentaBancolombia" id="bcCuenta" maxlength="15">
+                    </div>
+                </div>
+
+                <!-- SECCION PSE -->
+                <div class="form-section" id="sec-PSE">
+                    <div class="input-group">
+                        <label>Banco</label>
+                        <select name="bancoPse">
+                            <option value="">Seleccione su banco</option>
+                            <option value="bancolombia">Bancolombia</option>
+                            <option value="davivienda">Davivienda</option>
+                            <option value="bogota">Banco de Bogotá</option>
+                            <option value="bbva">BBVA</option>
+                            <option value="caja_social">Caja Social</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Tipo de Persona</label>
+                        <select name="tipoPersonaPse">
+                            <option value="natural">Natural</option>
+                            <option value="juridica">Jurídica</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Documento</label>
+                        <input type="text" placeholder="Cédula / NIT" name="docPse" id="pseDoc">
+                    </div>
+                </div>
+
+                <div id="slidePay" class="slide-commit"
+                     data-label="Desliza para pagar"
+                     data-done-label="Pago confirmado"
+                     data-error-label="Revisa los datos"
+                     data-confirm="confirmarPago"
+                     data-done="pagoConfirmado"
+                     data-error="pagoFallido"
+                     data-hold-ms="1200"
+                     style="--sc-track:#0A1B39; --sc-ink:#0048FF; --sc-on-ink:#FFFFFF; --sc-ok:#12B76A; --sc-on-ok:#FFFFFF; --sc-no:#E5484D; --sc-on-no:#FFFFFF; --sc-radius:14px; --sc-grip-r:10px; margin-bottom:10px;"></div>
+
+                <p id="slideHelp" style="font-size:11px; line-height:1.6; color:var(--text-muted); text-align:center; margin-bottom:14px;">
+                    Desliza el botón hasta el final o enfócalo y pulsa <strong>Fin</strong>.
+                </p>
+
+                <a th:href="@{/guias/mis-guias}" class="cancel-link">Cancelar y volver a la tienda</a>
+            </form>
+        </div>
+
+        <div class="widget-footer">
+            <div class="wompi-logo">
+                Wompi<span>.</span>
+            </div>
+            <div class="secure-badge">
+                <i class="fa-solid fa-lock"></i> Pagos seguros y cifrados en línea
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setMethod(method, btn) {
+            document.querySelectorAll('.method-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.getElementById('selectedMethod').value = method;
+            
+            document.querySelectorAll('.form-section').forEach(sec => {
+                sec.classList.remove('active');
+                // Quitar required de todos los inputs ocultos
+                sec.querySelectorAll('input, select').forEach(i => i.required = false);
+            });
+            
+            const activeSec = document.getElementById('sec-' + method);
+            if(activeSec) {
+                activeSec.classList.add('active');
+                // Poner required solo en inputs de la seccion activa
+                activeSec.querySelectorAll('input, select').forEach(i => i.required = true);
+            }
+        }
+
+        // Formateo de inputs
+        document.getElementById('ccNum').addEventListener('input', e => {
+            let v = e.target.value.replace(/\D/g, '');
+            let parts = v.match(/.{1,4}/g);
+            e.target.value = parts ? parts.join(' ') : v;
+        });
+
+        document.getElementById('ccExp').addEventListener('input', e => {
+            let v = e.target.value.replace(/\D/g, '');
+            if(v.length > 2) v = v.substring(0,2) + '/' + v.substring(2,4);
+            e.target.value = v;
+        });
+
+        ['nqPhone', 'bcCuenta', 'pseDoc'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el) {
+                el.addEventListener('input', e => e.target.value = e.target.value.replace(/\D/g, ''));
+            }
+        });
+
+        // ===== Pago deslizante (SlideCommit) =====
+        const wompiForm = document.getElementById('wompiForm');
+        let enviando = false;
+
+        function motivoInvalido() {
+            const metodo = document.getElementById('selectedMethod').value;
+            const activa = document.getElementById('sec-' + metodo);
+            if (!activa) return 'Selecciona un método de pago';
+
+            for (const campo of activa.querySelectorAll('input, select')) {
+                if (!campo.checkValidity()) {
+                    campo.reportValidity();
+                    campo.focus();
+                    return 'Revisa los datos marcados';
+                }
+            }
+
+            if (metodo === 'TARJETA') {
+                const numero = (document.getElementById('ccNum').value || '').replace(/\D/g, '');
+                const exp = document.getElementById('ccExp').value || '';
+                if (numero.length < 15) return 'Número de tarjeta incompleto';
+                if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(exp)) return 'Vencimiento inválido (MM/AA)';
+                const cvc = activa.querySelector('input[type="password"]');
+                if (!cvc || cvc.value.length < 3) return 'CVC incompleto';
+            } else if (metodo === 'NEQUI') {
+                const tel = (document.getElementById('nqPhone').value || '').replace(/\D/g, '');
+                if (tel.length !== 10) return 'Celular Nequi inválido';
+            } else if (metodo === 'BANCOLOMBIA') {
+                const cuenta = (document.getElementById('bcCuenta').value || '').replace(/\D/g, '');
+                if (cuenta.length < 6) return 'Número de cuenta inválido';
+            } else if (metodo === 'PSE') {
+                const doc = (document.getElementById('pseDoc').value || '').replace(/\D/g, '');
+                if (doc.length < 5) return 'Documento inválido';
+            }
+            return null;
+        }
+
+        // Se llama al soltar el deslizador. Si rechaza, el componente muestra el error.
+        window.confirmarPago = function () {
+            return new Promise((resolve, reject) => {
+                const motivo = motivoInvalido();
+                if (motivo) {
+                    reject(motivo);
+                    return;
+                }
+                // Simulación de la validación con el banco (Wompi sandbox).
+                setTimeout(resolve, 900);
+            });
+        };
+
+        window.pagoFallido = function (motivo) {
+            const ayuda = document.getElementById('slideHelp');
+            if (ayuda) {
+                ayuda.textContent = 'No pudimos validar el pago: ' + motivo + '. Corrige los datos e inténtalo otra vez.';
+            }
+        };
+
+        window.pagoConfirmado = function () {
+            if (enviando) return;
+            enviando = true;
+            document.getElementById('slideHelp').textContent = 'Pago aprobado. Generando tu comprobante...';
+            document.getElementById('simLoader').style.display = 'flex';
+            setTimeout(function () { wompiForm.submit(); }, 650);
+        };
+
+        // Enter en un campo no debe enviar sin deslizar: guía al usuario al control.
+        wompiForm.addEventListener('submit', function (e) {
+            if (enviando) return;
+            e.preventDefault();
+            const ayuda = document.getElementById('slideHelp');
+            const motivo = motivoInvalido();
+            if (ayuda) {
+                ayuda.textContent = motivo
+                    ? motivo + '. Corrige los datos e inténtalo otra vez.'
+                    : 'Desliza el botón para confirmar el pago (o pulsa la tecla Fin).';
+            }
+            const capsule = document.querySelector('#slidePay .slide-commit__capsule');
+            if (capsule) capsule.focus();
+        });
+
+        // Inicializar con la primera opcion requerida
+        setMethod('TARJETA', document.querySelector('.method-btn.active'));
+    </script>
+    <script th:src="@{/js/slide-commit.js}"></script>
+</body>
+</html>

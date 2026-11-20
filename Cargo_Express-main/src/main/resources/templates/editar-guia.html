@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modificar Guía | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Leaflet para Mapas (Free & No API Key) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" th:href="@{/css/sai-theme.css}">
+
+    <style>
+        :root {
+            /* Paleta Oficial SAI CARGO */
+            --brand-blue: #002855;       
+            --brand-blue-light: #1A4D80; 
+            --brand-orange: #FF6600;     
+            --brand-orange-hover: #E65C00;
+            --bg-main: #F4F7F9;          
+            --white: #FFFFFF;
+            --text-dark: #1E293B;        
+            --text-muted: #64748B;       
+            --border-light: #E2E8F0;
+            
+            --danger-bg: #FEE2E2;
+            --danger-text: #991B1B;
+            --ai-bg: #EFF6FF;
+            --ai-text: #2563EB;
+            --ai-glow: 0 0 15px rgba(37, 99, 235, 0.2);
+
+            --shadow-sm: 0 2px 4px rgba(0, 40, 85, 0.04);
+            --shadow-md: 0 10px 25px rgba(0, 40, 85, 0.06);
+            --shadow-lg: 0 20px 40px rgba(0, 40, 85, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-dark);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--brand-orange); }
+
+        /* --- SIDEBAR --- */
+        .sidebar { width: 270px; background: var(--white); border-right: 1px solid var(--border-light); padding: 30px 20px; position: fixed; height: 100vh; display: flex; flex-direction: column; z-index: 100; box-shadow: var(--shadow-sm); }
+        .sidebar-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light); }
+        .sidebar-logo img { width: 140px; height: auto; transition: 0.3s; }
+        .sidebar-logo img:hover { transform: scale(1.05); }
+
+        .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 15px 0 10px 15px; font-weight: 700; }
+        .sidebar a { color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 10px; transition: all 0.3s ease; display: flex; align-items: center; gap: 15px; font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+        .sidebar a i { font-size: 18px; width: 20px; text-align: center; }
+        .sidebar a:hover, .sidebar a.active { background: var(--bg-main); color: var(--brand-blue); }
+        .sidebar a.btn-highlight { background: var(--brand-blue); color: var(--white); margin-top: 10px; box-shadow: 0 4px 12px rgba(0, 40, 85, 0.2); }
+        .sidebar a.btn-highlight:hover { background: var(--brand-blue-light); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 40, 85, 0.3); }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content { margin-left: 270px; flex: 1; padding: 40px 50px; display: flex; flex-direction: column; max-width: calc(100vw - 270px); }
+
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+        .header-title h1 { font-size: 28px; color: var(--brand-blue); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .header-title p { color: var(--text-muted); font-size: 14px; }
+
+        .user-pill { background: var(--white); padding: 8px 25px; border-radius: 50px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); transition: 0.3s; }
+        .user-pill:hover { box-shadow: var(--shadow-md); border-color: #CBD5E1; }
+
+        /* --- GRID --- */
+        .content-grid { display: grid; grid-template-columns: 1fr 380px; gap: 30px; align-items: start; }
+
+        /* --- FORMULARIO --- */
+        .form-card { background: var(--white); border-radius: 20px; padding: 40px; box-shadow: var(--shadow-md); border: 1px solid var(--border-light); }
+
+        .section-title { font-size: 15px; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 25px; padding-bottom: 12px; border-bottom: 2px solid var(--bg-main); grid-column: span 2; display: flex; align-items: center; justify-content: space-between; }
+        .section-title .title-left { display: flex; align-items: center; gap: 10px; }
+        .section-title .title-left i { color: var(--brand-orange); }
+
+        /* Badge Modo Edición */
+        .status-badge { background: #E0F2FE; color: var(--brand-blue); padding: 5px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #BAE6FD; text-transform: uppercase; }
+
+        form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 25px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; position: relative; }
+        .full-width { grid-column: span 2; }
+        label { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+
+        .input-with-icon { position: relative; }
+        .input-with-icon i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 15px; transition: 0.3s; }
+        .input-with-icon span.suffix { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 14px; font-weight: 600; pointer-events: none; }
+
+        input, select { width: 100%; padding: 14px 15px 14px 45px; border: 2px solid var(--border-light); border-radius: 12px; font-size: 14px; font-family: inherit; color: var(--text-dark); transition: all 0.3s ease; outline: none; background: var(--bg-main); appearance: none; }
+        .no-icon-input { padding-left: 15px !important; }
+
+        select { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748B%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 10px auto; }
+
+        input:focus, select:focus { background: var(--white); border-color: var(--brand-blue); box-shadow: 0 0 0 4px rgba(0, 40, 85, 0.1); }
+        input:focus + i, select:focus + i { color: var(--brand-blue); }
+
+        .dimensions-group { display: flex; gap: 15px; }
+
+        /* --- CHIPS INTELIGENTES --- */
+        .smart-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .chip { background: var(--bg-main); border: 1px solid var(--border-light); color: var(--text-muted); padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px; user-select: none; }
+        .chip:hover { background: var(--ai-bg); color: var(--brand-blue); border-color: var(--accent-cyan); transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .chip:active { transform: translateY(0); }
+        .chip i { font-size: 11px; color: var(--brand-orange); }
+
+        .legal-badge { grid-column: span 2; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+        .legal-badge i { color: #166534; font-size: 20px; }
+        .legal-badge p { font-size: 12px; color: #166534; line-height: 1.4; margin: 0; font-weight: 500; }
+
+        /* Botones Acción */
+        .actions-bar { grid-column: span 2; display: flex; justify-content: flex-end; gap: 15px; margin-top: 15px; padding-top: 25px; border-top: 2px solid var(--bg-main); }
+        .btn { padding: 15px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 15px; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+        .btn-submit { background: var(--brand-blue); color: white; box-shadow: 0 4px 15px rgba(0, 40, 85, 0.2); }
+        .btn-submit:hover { background: var(--brand-blue-light); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0, 40, 85, 0.3); }
+        .btn-cancel { background: var(--white); color: var(--text-muted); border: 2px solid var(--border-light); }
+        .btn-cancel:hover { background: var(--danger-bg); color: var(--danger-text); border-color: #FECACA; }
+
+        /* --- PANEL LATERAL COTIZADOR --- */
+        .summary-card { background: linear-gradient(180deg, var(--brand-blue) 0%, var(--brand-blue-light) 100%); border-radius: 20px; padding: 35px 30px; color: white; position: sticky; top: 40px; box-shadow: var(--shadow-lg); }
+        .summary-title { font-size: 18px; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: var(--white); }
+        .summary-title i { color: var(--accent-cyan); }
+
+        .route-visual { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 20px; margin-bottom: 25px; position: relative; }
+        .route-point { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; position: relative; z-index: 2; }
+        .route-point:last-child { margin-bottom: 0; }
+        .point-icon { width: 30px; height: 30px; background: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--brand-blue); font-size: 12px; font-weight: 800; }
+        .point-icon.dest { background: var(--brand-orange); color: white; }
+        .point-text { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); }
+        .point-text span { display: block; font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .route-line { position: absolute; left: 34px; top: 35px; bottom: 35px; width: 2px; background: dashed 2px rgba(255,255,255,0.3); z-index: 1; }
+
+        .summary-details { margin-bottom: 30px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: rgba(255,255,255,0.6); }
+        .detail-value { font-weight: 700; text-align: right; max-width: 150px; }
+
+        .price-box { background: var(--white); border-radius: 15px; padding: 25px; text-align: center; color: var(--brand-blue); position: relative; overflow: hidden; }
+        .price-box::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--brand-orange); }
+        .price-label { font-size: 12px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 5px; }
+        .price-amount { font-size: 36px; font-weight: 800; color: var(--brand-blue); letter-spacing: -1px; }
+        .ai-tag { position: absolute; top: 15px; right: 15px; background: var(--ai-bg); color: var(--ai-text); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } .summary-card { position: relative; top: 0; } }
+        @media (max-width: 1024px) { .sidebar { width: 80px; padding: 20px 10px; } .sidebar span, .nav-label, .sidebar-logo img { display: none; } .sidebar-logo { border: none; margin-bottom: 20px; } .sidebar-logo::after { content: '\f4df'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 24px; color: var(--brand-blue); } .main-content { margin-left: 80px; max-width: calc(100vw - 80px); padding: 30px 20px; } .user-pill span { display: none; } }
+        @media (max-width: 768px) { form { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } .legal-badge, .actions-bar { grid-column: span 1; } }
+
+        /* Modal Mapa */
+        #mapModal { display: none; position: fixed; z-index: 3000; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
+        .map-container { background: white; width: 90%; max-width: 800px; height: 600px; border-radius: 20px; padding: 20px; position: relative; }
+        #map { width: 100%; height: 450px; border-radius: 12px; margin-top: 10px; }
+        .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn-map-select { background: var(--brand-blue); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+    <div th:replace="~{fragments/sai-sidebar :: sidebar('guias')}"></div>
+
+    <main class="main-content">
+        <div class="top-header">
+            <div class="header-title">
+                <h1>Actualizar Guía #<span th:text="${guia.id}"></span></h1>
+                <p>Modifique los datos operativos. La IA recalculará automáticamente la tarifa.</p>
+            </div>
+            
+            <div class="user-pill">
+                <div style="text-align: right">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--brand-blue);" th:text="${#authentication.name}">Operador</div>
+                    <a th:href="@{/usuario/perfil}" style="font-size: 11px; color: var(--text-muted); text-decoration: none; font-weight: 600;">VER PERFIL</a>
+                </div>
+                <i class="fa-solid fa-circle-user" style="font-size: 36px; color: var(--brand-blue-light);"></i>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            
+            <div class="form-card">
+                <div th:if="${error}" class="error-msg">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 20px;"></i> 
+                    <span th:text="${error}"></span>
+                </div>
+
+                <form th:action="@{/guias/editar}" method="post" th:object="${guia}">
+                    <!-- Bloque de Errores de Validación -->
+                    <div th:if="${#fields.hasErrors('*')}" class="error-msg" style="background: #FFFBEB; color: #92400E; border-left-color: #F59E0B; margin-bottom: 20px;">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; margin-bottom: 5px;">Por favor corrige los siguientes campos:</div>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                                <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" th:field="*{id}" id="guiaId" />
+
+                    <h3 class="section-title">
+                        <div class="title-left"><i class="fa-solid fa-address-book"></i> Datos de Contacto</div>
+                        <div class="status-badge"><i class="fa-solid fa-pen"></i> MODO EDICIÓN</div>
+                    </h3>
+                    
+                    <div class="form-group">
+                        <label>Nombre del Remitente</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{remitente}" required 
+                                   pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" 
+                                   title="El nombre solo puede contener letras y espacios"
+                                   autocomplete="off">
+                            <i class="fa-solid fa-user-tie"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nombre del Destinatario</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{destinatario}" required 
+                                   pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" 
+                                   title="El nombre solo puede contener letras y espacios"
+                                   autocomplete="off">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cédula / NIT Remitente</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{cedulaRemitente}" required>
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cédula / NIT Destinatario</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{cedulaDestinatario}" required>
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" style="margin-top: 15px;"><i class="fa-solid fa-route"></i> Ruta Logística</h3>
+
+                    <div class="form-group">
+                        <label>Departamento de Origen</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{departamentoOrigen}" id="departamentoOrigen" required>
+                                <option value="" disabled>Seleccione Departamento...</option>
+                                <option value="Amazonas">Amazonas</option><option value="Antioquia">Antioquia</option><option value="Arauca">Arauca</option><option value="Atlántico">Atlántico</option><option value="Bolívar">Bolívar</option><option value="Boyacá">Boyacá</option><option value="Caldas">Caldas</option><option value="Caquetá">Caquetá</option><option value="Casanare">Casanare</option><option value="Cauca">Cauca</option><option value="Cesar">Cesar</option><option value="Chocó">Chocó</option><option value="Córdoba">Córdoba</option><option value="Cundinamarca">Cundinamarca</option><option value="Guainía">Guainía</option><option value="Guaviare">Guaviare</option><option value="Huila">Huila</option><option value="La Guajira">La Guajira</option><option value="Magdalena">Magdalena</option><option value="Meta">Meta</option><option value="Nariño">Nariño</option><option value="Norte de Santander">Norte de Santander</option><option value="Putumayo">Putumayo</option><option value="Quindío">Quindío</option><option value="Risaralda">Risaralda</option><option value="San Andrés y Providencia">San Andrés y Providencia</option><option value="Santander">Santander</option><option value="Sucre">Sucre</option><option value="Tolima">Tolima</option><option value="Valle del Cauca">Valle del Cauca</option><option value="Vaupés">Vaupés</option><option value="Vichada">Vichada</option>
+                            </select>
+                            <i class="fa-solid fa-map"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ciudad de Origen</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{ciudadOrigen}" id="ciudadOrigen" required>
+                                <option value="" disabled>Seleccione Ciudad...</option>
+                                <option value="Bogotá D.C.">Bogotá D.C.</option><option value="Medellín">Medellín</option><option value="Cali">Cali</option><option value="Barranquilla">Barranquilla</option><option value="Cartagena de Indias">Cartagena de Indias</option><option value="Cúcuta">Cúcuta</option><option value="Bucaramanga">Bucaramanga</option><option value="Pereira">Pereira</option><option value="Santa Marta">Santa Marta</option><option value="Ibagué">Ibagué</option><option value="Manizales">Manizales</option><option value="Villavicencio">Villavicencio</option><option value="Neiva">Neiva</option><option value="Pasto">Pasto</option><option value="Armenia">Armenia</option><option value="Valledupar">Valledupar</option><option value="Montería">Montería</option><option value="Sincelejo">Sincelejo</option><option value="Popayán">Popayán</option><option value="Tunja">Tunja</option>
+                            </select>
+                            <i class="fa-solid fa-plane-departure"></i>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillLocation('Origen', 'Cundinamarca', 'Bogotá D.C.')"><i class="fa-solid fa-location-crosshairs"></i> Bogotá</span>
+                            <span class="chip" onclick="fillLocation('Origen', 'Antioquia', 'Medellín')">Medellín</span>
+                            <span class="chip" onclick="fillLocation('Origen', 'Valle del Cauca', 'Cali')">Cali</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Departamento de Destino</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{departamentoDestino}" id="departamentoDestino" required>
+                                <option value="" disabled>Seleccione Departamento...</option>
+                                <option value="Amazonas">Amazonas</option><option value="Antioquia">Antioquia</option><option value="Arauca">Arauca</option><option value="Atlántico">Atlántico</option><option value="Bolívar">Bolívar</option><option value="Boyacá">Boyacá</option><option value="Caldas">Caldas</option><option value="Caquetá">Caquetá</option><option value="Casanare">Casanare</option><option value="Cauca">Cauca</option><option value="Cesar">Cesar</option><option value="Chocó">Chocó</option><option value="Córdoba">Córdoba</option><option value="Cundinamarca">Cundinamarca</option><option value="Guainía">Guainía</option><option value="Guaviare">Guaviare</option><option value="Huila">Huila</option><option value="La Guajira">La Guajira</option><option value="Magdalena">Magdalena</option><option value="Meta">Meta</option><option value="Nariño">Nariño</option><option value="Norte de Santander">Norte de Santander</option><option value="Putumayo">Putumayo</option><option value="Quindío">Quindío</option><option value="Risaralda">Risaralda</option><option value="San Andrés y Providencia">San Andrés y Providencia</option><option value="Santander">Santander</option><option value="Sucre">Sucre</option><option value="Tolima">Tolima</option><option value="Valle del Cauca">Valle del Cauca</option><option value="Vaupés">Vaupés</option><option value="Vichada">Vichada</option>
+                            </select>
+                            <i class="fa-solid fa-map"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ciudad de Destino</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{ciudadDestino}" id="ciudadDestino" required>
+                                <option value="" disabled>Seleccione Ciudad...</option>
+                                <option value="Bogotá D.C.">Bogotá D.C.</option><option value="Medellín">Medellín</option><option value="Cali">Cali</option><option value="Barranquilla">Barranquilla</option><option value="Cartagena de Indias">Cartagena de Indias</option><option value="Cúcuta">Cúcuta</option><option value="Bucaramanga">Bucaramanga</option><option value="Pereira">Pereira</option><option value="Santa Marta">Santa Marta</option><option value="Ibagué">Ibagué</option><option value="Manizales">Manizales</option><option value="Villavicencio">Villavicencio</option><option value="Neiva">Neiva</option><option value="Pasto">Pasto</option><option value="Armenia">Armenia</option><option value="Valledupar">Valledupar</option><option value="Montería">Montería</option><option value="Sincelejo">Sincelejo</option><option value="Popayán">Popayán</option><option value="Tunja">Tunja</option>
+                            </select>
+                            <i class="fa-solid fa-plane-arrival"></i>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillLocation('Destino', 'Cundinamarca', 'Bogotá D.C.')">Bogotá</span>
+                            <span class="chip" onclick="fillLocation('Destino', 'Antioquia', 'Medellín')">Medellín</span>
+                            <span class="chip" onclick="fillLocation('Destino', 'Valle del Cauca', 'Cali')">Cali</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>
+                            Dirección Exacta de Recogida
+                            <button type="button" class="chip" onclick="abrirMapa('direccionEnvio')" style="margin: 0; background: var(--brand-blue); color: white; border: none;">
+                                <i class="fa-solid fa-map-location-dot" style="color: white;"></i> Seleccionar en Mapa
+                            </button>
+                        </label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{direccionEnvio}" id="direccionEnvio" required>
+                            <i class="fa-solid fa-map-pin"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>
+                            Dirección Exacta de Entrega
+                            <button type="button" class="chip" onclick="abrirMapa('direccionRecibo')" style="margin: 0; background: var(--brand-blue); color: white; border: none;">
+                                <i class="fa-solid fa-map-location-dot" style="color: white;"></i> Seleccionar en Mapa
+                            </button>
+                        </label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{direccionRecibo}" id="direccionRecibo" required>
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" style="margin-top: 15px;"><i class="fa-solid fa-boxes-packing"></i> Detalles de la Carga</h3>
+
+                    <div class="form-group full-width">
+                        <label>
+                            Tipo de Empaque
+                            <span id="ai-suggestion-badge" style="display: none; background: var(--ai-bg); color: var(--ai-text); padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.2); box-shadow: var(--ai-glow); animation: pulse-ai 2s infinite;">
+                                <i class="fa-solid fa-microchip"></i> Sugerencia SAI: <span id="sugerencia-texto">...</span>
+                            </span>
+                        </label>
+                        <div class="input-with-icon">
+                            <select th:field="*{tipoCarga}" id="tipoCarga" required>
+                                <option value="" disabled>Seleccione clasificación...</option>
+                                <option value="Sobre de Documentos">Sobre de Documentos</option>
+                                <option value="Paquete Pequeño (Hasta 5kg)">Paquete Pequeño (Hasta 5kg)</option>
+                                <option value="Caja Estándar">Caja Estándar</option>
+                                <option value="Caja Grande">Caja Grande</option>
+                                <option value="Carga Frágil">Carga Frágil</option>
+                                <option value="Paletizado">Paletizado Industrial</option>
+                            </select>
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillTypeAndDims('Sobre de Documentos', 1, 30, 20)"><i class="fa-solid fa-envelope"></i> Sobre Doc.</span>
+                            <span class="chip" onclick="fillTypeAndDims('Paquete Pequeño (Hasta 5kg)', 5, 30, 30)"><i class="fa-solid fa-box"></i> Caja Pequeña</span>
+                            <span class="chip" onclick="fillTypeAndDims('Caja Estándar', 15, 50, 50)"><i class="fa-solid fa-box"></i> Caja Mediana</span>
+                            <span class="chip" onclick="fillTypeAndDims('Caja Grande', 30, 80, 80)"><i class="fa-solid fa-boxes-stacked"></i> Caja Grande</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Peso Físico</label>
+                        <div class="input-with-icon">
+                            <input type="number" step="0.01" th:field="*{pesoKg}" id="pesoKg" required>
+                            <i class="fa-solid fa-weight-hanging"></i>
+                            <span class="suffix">KG</span>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillInput('pesoKg', 1)">1 KG</span>
+                            <span class="chip" onclick="fillInput('pesoKg', 5)">5 KG</span>
+                            <span class="chip" onclick="fillInput('pesoKg', 10)">10 KG</span>
+                            <span class="chip" onclick="fillInput('pesoKg', 20)">20 KG</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Dimensiones (Ancho x Alto)</label>
+                        <div class="dimensions-group">
+                            <div class="input-with-icon" style="flex:1;">
+                                <input type="number" step="0.1" th:field="*{anchoCm}" id="anchoCm" class="no-icon-input" required>
+                                <span class="suffix">CM</span>
+                            </div>
+                            <div class="input-with-icon" style="flex:1;">
+                                <input type="number" step="0.1" th:field="*{alturaCm}" id="alturaCm" class="no-icon-input" required>
+                                <span class="suffix">CM</span>
+                            </div>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillDims(20, 20)">20x20</span>
+                            <span class="chip" onclick="fillDims(40, 40)">40x40</span>
+                            <span class="chip" onclick="fillDims(60, 60)">60x60</span>
+                            <span class="chip" onclick="fillDims(100, 100)">100x100</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Valor Declarado (Seguro)</label>
+                        <div class="input-with-icon">
+                            <input type="number" step="0.01" th:field="*{valorDeclarado}" id="valorDeclarado" required>
+                            <i class="fa-solid fa-dollar-sign"></i>
+                            <span class="suffix">COP</span>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillInput('valorDeclarado', 50000)">$50K</span>
+                            <span class="chip" onclick="fillInput('valorDeclarado', 100000)">$100K</span>
+                            <span class="chip" onclick="fillInput('valorDeclarado', 500000)">$500K</span>
+                            <span class="chip" onclick="fillInput('valorDeclarado', 1000000)">$1M</span>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" style="margin-top: 15px;"><i class="fa-solid fa-signal"></i> Estado Operativo</h3>
+
+                    <div class="form-group full-width" th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'') or hasRole(''ROLE_REPARTIDOR'')')}">
+                        <label>Estado de la Guía (Control Operativo)</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{estado}" required style="border-color: var(--brand-orange); background: #FFF7ED;">
+                                <option value="Pendiente">🟠 Pendiente de Recogida</option>
+                                <option value="Recogido">📦 Recogido en Origen</option>
+                                <option value="No Recogido">🚫 No Recogido</option>
+                                <option value="En Sucursal">🏢 En Sucursal</option>
+                                <option value="En Tránsito">🔵 En Tránsito (Ruta de Entrega)</option>
+                                <option value="Novedad">⚠️ Novedad en Entrega</option>
+                                <option value="Entregado">🟢 Entregado al Destinatario</option>
+                                <option value="Cancelado">🔴 Operación Cancelada</option>
+                            </select>
+                            <i class="fa-solid fa-truck-ramp-box" style="color: var(--brand-orange);"></i>
+                        </div>
+                        <p style="font-size: 11px; color: var(--brand-orange); font-weight: 600; margin-top: 5px;">
+                            <i class="fa-solid fa-circle-info"></i> Solo personal autorizado puede modificar el estado logístico.
+                        </p>
+                    </div>
+
+                    <div class="form-group full-width" th:unless="${#authorization.expression('hasRole(''ROLE_ADMIN'') or hasRole(''ROLE_REPARTIDOR'')')}">
+                        <label>Estado Actual</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:value="*{estado}" readonly style="background-color: #f1f5f9; cursor: not-allowed; font-weight: 700; color: var(--brand-blue);">
+                            <i class="fa-solid fa-lock"></i>
+                        </div>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">Tu estado es gestionado por el equipo logístico de SAI CARGO.</p>
+                    </div>
+
+                    <div class="legal-badge">
+                        <i class="fa-solid fa-shield-check"></i>
+                        <p><strong>Modificación Segura:</strong> Esta actualización quedará registrada en el historial del sistema. Datos protegidos bajo la Ley 1581 de Habeas Data.</p>
+                    </div>
+
+                    <div class="actions-bar">
+                        <a th:href="@{/guias}" class="btn btn-cancel">Cancelar Cambios</a>
+                        <button type="submit" class="btn btn-submit" id="btnGenerar">
+                            <i class="fa-solid fa-check-double"></i> GUARDAR GUÍA
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-title">
+                    <i class="fa-solid fa-robot"></i> Cotizador Predictivo
+                </div>
+                <div class="route-visual">
+                    <div class="route-line"></div>
+                    <div class="route-point">
+                        <div class="point-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <div class="point-text">
+                            <span>Origen Actual</span>
+                            <div id="uiOrigen">Cargando...</div>
+                        </div>
+                    </div>
+                    <div class="route-point">
+                        <div class="point-icon dest"><i class="fa-solid fa-flag-checkered"></i></div>
+                        <div class="point-text">
+                            <span>Destino Actual</span>
+                            <div id="uiDestino">Cargando...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Empaque:</span>
+                        <span class="detail-value" id="uiTipo" style="font-size: 12px;">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Peso Liquidado:</span>
+                        <span class="detail-value" id="uiPeso">0 KG</span>
+                    </div>
+                    <div class="detail-row" style="color: var(--accent-cyan);">
+                        <span class="detail-label">Est. Entrega:</span>
+                        <span class="detail-value" id="uiTiempo"><i class="fa-solid fa-clock"></i> Calculando...</span>
+                    </div>
+                </div>
+
+                <div class="price-box">
+                    <div class="ai-tag"><i class="fa-solid fa-arrows-rotate"></i> Recalculando</div>
+                    <div class="price-label">Nueva Tarifa</div>
+                    <div class="price-amount" id="uiPrecio">$0</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- 1. FUNCIONES DE AUTOCOMPLETADO (SMART CHIPS) --- //
+        function fillInput(inputId, value) {
+            const input = document.getElementById(inputId);
+            if(input) {
+                input.value = value;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                if(input.tagName === 'SELECT') {
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        }
+
+        function fillLocation(type, dept, city) {
+            fillInput('departamento' + type, dept);
+            fillInput('ciudad' + type, city);
+        }
+
+        function fillDims(ancho, alto) {
+            fillInput('anchoCm', ancho);
+            fillInput('alturaCm', alto);
+        }
+
+        function fillTypeAndDims(tipo, peso, ancho, alto) {
+            fillInput('tipoCarga', tipo);
+            fillInput('pesoKg', peso);
+            fillInput('anchoCm', ancho);
+            fillInput('alturaCm', alto);
+        }
+
+        // --- 2. LÓGICA DEL COTIZADOR IA --- //
+        const inputs = {
+            origen: document.getElementById('ciudadOrigen'),
+            destino: document.getElementById('ciudadDestino'),
+            tipo: document.getElementById('tipoCarga'),
+            peso: document.getElementById('pesoKg'),
+            valor: document.getElementById('valorDeclarado'),
+            ancho: document.getElementById('anchoCm'),
+            alto: document.getElementById('alturaCm')
+        };
+
+        const uiElements = {
+            origen: document.getElementById('uiOrigen'),
+            destino: document.getElementById('uiDestino'),
+            tipo: document.getElementById('uiTipo'),
+            peso: document.getElementById('uiPeso'),
+            tiempo: document.getElementById('uiTiempo'),
+            precio: document.getElementById('uiPrecio')
+        };
+
+        const formatCurrency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+        function updateLiveSummary() {
+            // Actualizar Textos
+            const dOrigen = document.getElementById('departamentoOrigen').value || '';
+            const dDestino = document.getElementById('departamentoDestino').value || '';
+            
+            uiElements.origen.innerText = inputs.origen.value ? (inputs.origen.value + (dOrigen ? ', ' + dOrigen : '')) : 'Pendiente...';
+            uiElements.destino.innerText = inputs.destino.value ? (inputs.destino.value + (dDestino ? ', ' + dDestino : '')) : 'Pendiente...';
+            
+            let tipoTexto = inputs.tipo.value || '-';
+            if(tipoTexto.length > 22) tipoTexto = tipoTexto.substring(0, 19) + '...';
+            uiElements.tipo.innerText = tipoTexto;
+            
+            const pesoFisico = parseFloat(inputs.peso.value) || 0;
+            const valor = parseFloat(inputs.valor.value) || 0;
+            const ancho = parseFloat(inputs.ancho.value) || 0;
+            const alto = parseFloat(inputs.alto.value) || 0;
+            
+            const pesoVolumetrico = (ancho * alto * 20) / 4000; 
+            const pesoCobrar = Math.max(pesoFisico, pesoVolumetrico);
+
+            uiElements.peso.innerText = pesoCobrar > 0 ? `${pesoCobrar.toFixed(1)} KG` : '0 KG';
+
+            let precioBase = 0;
+            if (pesoCobrar > 0 || valor > 0) {
+                precioBase = 12500; 
+                precioBase += (pesoCobrar * 3500); 
+                precioBase += (valor * 0.02); 
+            }
+            
+            uiElements.precio.innerText = formatCurrency.format(precioBase);
+
+            if (inputs.origen.value && inputs.destino.value) {
+                if (inputs.origen.value.trim().toLowerCase() === inputs.destino.value.trim().toLowerCase()) {
+                    uiElements.tiempo.innerHTML = '<i class="fa-solid fa-truck-fast"></i> Hoy (Local)';
+                } else {
+                    uiElements.tiempo.innerHTML = '<i class="fa-solid fa-clock"></i> 24 - 48 Horas';
+                }
+            } else {
+                uiElements.tiempo.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Esperando ruta...';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLiveSummary();
+        });
+
+        // Listeners para recalcular al modificar
+        const allInputs = {...inputs, dO: document.getElementById('departamentoOrigen'), dD: document.getElementById('departamentoDestino')};
+        Object.values(allInputs).forEach(input => {
+            if(input) {
+                input.addEventListener('input', updateLiveSummary);
+                if(input.tagName === 'SELECT') input.addEventListener('change', updateLiveSummary);
+            }
+        });
+
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const btn = document.getElementById('btnGenerar');
+            if (this.checkValidity()) {
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ACTUALIZANDO...';
+                btn.style.opacity = '0.9';
+                btn.style.pointerEvents = 'none';
+            }
+        });
+
+        // --- 4. LÓGICA DE MAPA INTERACTIVO --- //
+        let map;
+        let marker;
+        let activeInputId;
+        let currentGeocodedData = null;
+
+        function abrirMapa(targetId) {
+            activeInputId = targetId;
+            document.getElementById('mapModal').style.display = 'flex';
+            
+            if (!map) {
+                map = L.map('map').setView([4.5709, -74.2973], 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                map.on('click', function(e) {
+                    const { lat, lng } = e.latlng;
+                    if (marker) map.removeLayer(marker);
+                    marker = L.marker([lat, lng]).addTo(map);
+                           // Geocoding reverso (Nominatim)
+                    document.getElementById('tempAddress').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Localizando coordenadas...';
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.display_name) {
+                                document.getElementById('tempAddress').innerText = data.display_name;
+                                currentGeocodedData = data.address;
+                                console.log("Datos Geocodificados:", data.address);
+                            } else {
+                                document.getElementById('tempAddress').innerText = "No se encontró una dirección exacta, intenta en otro punto.";
+                            }
+                        }).catch(err => {
+                            document.getElementById('tempAddress').innerText = "Error de conexión con el satélite geográfico.";
+                        });
+                });
+            } else {
+                map.invalidateSize();
+            }
+        }
+
+        function confirmarUbicacion() {
+            const address = document.getElementById('tempAddress').innerText;
+            if (address && address !== 'Haga clic en el mapa para marcar la ubicación...') {
+                document.getElementById(activeInputId).value = address;
+                document.getElementById(activeInputId).dispatchEvent(new Event('input', { bubbles: true }));
+                
+                if (currentGeocodedData) {
+                    const suffix = activeInputId === 'direccionEnvio' ? 'Origen' : 'Destino';
+                    const deptMap = {
+                        "Bogotá": "Cundinamarca",
+                        "Distrito Capital de Bogotá": "Cundinamarca",
+                        "Bogotá, D.C.": "Cundinamarca",
+                        "Valle del Cauca": "Valle del Cauca",
+                        "Antioquia": "Antioquia",
+                        "Atlántico": "Atlántico"
+                    };
+
+                    const deptName = currentGeocodedData.state || currentGeocodedData.province || currentGeocodedData.region;
+                    const cityName = currentGeocodedData.city || currentGeocodedData.town || currentGeocodedData.village || currentGeocodedData.suburb || currentGeocodedData.county || currentGeocodedData.municipality;
+
+                    if (deptName) {
+                        const finalDept = deptMap[deptName] || deptName;
+                        const deptSelect = document.getElementById('departamento' + suffix);
+                        Array.from(deptSelect.options).forEach(opt => {
+                            if (opt.value.includes(finalDept) || finalDept.includes(opt.value)) {
+                                deptSelect.value = opt.value;
+                            }
+                        });
+                    }
+
+                    if (cityName) {
+                        const citySelect = document.getElementById('ciudad' + suffix);
+                        let found = false;
+                        Array.from(citySelect.options).forEach(opt => {
+                            const val = opt.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                            const search = cityName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                            if (val.includes(search) || search.includes(val)) {
+                                citySelect.value = opt.value;
+                                found = true;
+                            }
+                        });
+                        // Fallback específico para Bogotá
+                        if (!found && (cityName.toLowerCase().includes("bogota") || cityName.toLowerCase().includes("distrito capital"))) {
+                            citySelect.value = "Bogotá D.C.";
+                        }
+                        citySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+                cerrarMapa();
+            } else {
+                alert("Por favor, seleccione un punto en el mapa.");
+            }
+        }
+
+        function cerrarMapa() {
+            document.getElementById('mapModal').style.display = 'none';
+            document.getElementById('tempAddress').innerText = 'Haga clic en el mapa para marcar la ubicación...';
+            if (marker) map.removeLayer(marker);
+            currentGeocodedData = null;
+        }
+        // --- 5. LÓGICA DE PREDICCIÓN DE EMPAQUE (SAI-AI) --- //
+        function consultarSugerenciaEmpaque() {
+            const peso = parseFloat(inputs.peso.value) || 0;
+            const ancho = parseFloat(inputs.ancho.value) || 0;
+            const alto = parseFloat(inputs.alto.value) || 0;
+            
+            const badge = document.getElementById('ai-suggestion-badge');
+            const texto = document.getElementById('sugerencia-texto');
+
+            if (peso > 0 && ancho > 0 && alto > 0) {
+                fetch(`/api/guias/predecir-empaque?peso=${peso}&ancho=${ancho}&alto=${alto}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.sugerencia) {
+                            texto.innerText = data.sugerencia;
+                            badge.style.display = 'inline-flex';
+                        }
+                    })
+                    .catch(err => console.error("Error AI:", err));
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Vincular a los inputs relevantes
+        [inputs.peso, inputs.ancho, inputs.alto].forEach(input => {
+            input.addEventListener('input', consultarSugerenciaEmpaque);
+        });
+
+        // Permitir aplicar la sugerencia al hacer clic
+        document.getElementById('ai-suggestion-badge').addEventListener('click', function() {
+            const suggestedValue = document.getElementById('sugerencia-texto').innerText;
+            const select = document.getElementById('tipoCarga');
+            
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === suggestedValue) {
+                    select.selectedIndex = i;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    break;
+                }
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes pulse-ai {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+        #ai-suggestion-badge { cursor: pointer; transition: 0.3s; }
+        #ai-suggestion-badge:hover { transform: translateY(-2px) scale(1.1); background: var(--brand-blue); color: white; }
+    </style>
+
+    <div id="mapModal">
+        <div class="map-container">
+            <div class="map-header">
+                <h3 style="color: var(--brand-blue);"><i class="fa-solid fa-map-location-dot"></i> Seleccionar Ubicación</h3>
+                <button onclick="cerrarMapa()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <p id="tempAddress" style="font-size: 12px; color: var(--text-muted); background: var(--bg-main); padding: 10px; border-radius: 8px;">
+                Haga clic en el mapa para marcar la ubicación...
+            </p>
+            <div id="map"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                <button class="btn-cancel" onclick="cerrarMapa()" style="padding: 10px 20px;">Cancelar</button>
+                <button class="btn-map-select" onclick="confirmarUbicacion()" style="padding: 10px 20px;">Confirmar Dirección</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+CARGA EXPRESS - GUIAS Y ESTADOS
+
+DATOS DE UNA GUIA
+Cada guia registra remitente, destinatario, direcciones de envio y recibo, ciudades y departamentos de origen y destino, tipo de carga, peso en kilogramos, dimensiones (altura, ancho y largo opcional en centimetros), valor declarado, precio calculado, fecha de creacion, estado del envio y estado de pago.
+
+ESTADOS Y CICLO DE VIDA
+- Pendiente: estado inicial al crear la guia.
+- Recogido: recolectado por el repartidor en origen.
+- No Recogido: no se pudo recolectar; conserva el motivo para reasignar recogida.
+- En Sucursal: ingresado en sucursal; habilita la asignacion de entrega.
+- En Transito: en ruta multi-parada hacia la entrega final.
+- Novedad: incidencia reportada en la entrega con motivo detallado.
+- Entregado: entrega confirmada con firma del destinatario.
+- Cancelado / Eliminada: guia cancelada u ocultada del listado activo.
+
+REGLAS PARA SAI-BOT
+- El estado actual debe consultarse siempre mediante la herramienta correspondiente, nunca inferirse.
+- No exponer cedulas, direcciones exactas, telefonos, firmas ni informacion privada de otros usuarios.
+- Una guia Eliminada debe tratarse como no disponible.

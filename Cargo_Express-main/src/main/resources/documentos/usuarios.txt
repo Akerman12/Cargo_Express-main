@@ -1,0 +1,39 @@
+CARGA EXPRESS - USUARIOS, ROLES Y DIRECCIONES
+
+ENTIDAD USUARIO
+La entidad Usuario contiene:
+- Identificador.
+- Nombre.
+- Username único y obligatorio.
+- Contraseña.
+- Rol.
+- Indicador aprobado.
+- Correo electrónico.
+- Relación con las guías del usuario.
+
+VALORES Y ROLES
+El rol predeterminado de un usuario nuevo en el modelo es ROLE_CLIENTE. Los roles definidos en el enum Rol son:
+- ROLE_CLIENTE: Cliente.
+- ROLE_REPARTIDOR: Repartidor.
+- ROLE_ADMIN: Administrador.
+
+APROBACION
+El campo aprobado inicia en false. El controlador de autenticación REST contempla el caso de cuenta bloqueada o no aprobada y responde con un mensaje de autenticación no autorizada.
+
+AUTENTICACION
+AuthRestController expone POST /api/auth/login. Recibe una solicitud de inicio de sesión, autentica las credenciales mediante AuthenticationManager y genera un token JWT usando JwtUtil. La respuesta exitosa contiene token, username y rol. Las credenciales incorrectas producen respuesta HTTP 401; las cuentas bloqueadas o no aprobadas también producen HTTP 401.
+
+DIRECCIONES
+La entidad Direccion almacena alias, nombre de contacto, dirección, ciudad, departamento, teléfono y usuario propietario. DireccionRepository permite consultar las direcciones asociadas a un usuario.
+
+RELACION CON GUIAS
+Un usuario puede tener varias guías. GuiaRepository permite consultar las guías de un usuario excluyendo aquellas cuyo estado sea Eliminada.
+
+REPOSITORIOS
+UsuarioRepository permite buscar por username y listar usuarios por rol. DireccionRepository permite listar direcciones por usuario. PasswordResetTokenRepository administra los tokens de recuperación de contraseña.
+
+REGLAS DE PRIVACIDAD PARA SAI-BOT
+- No revelar contraseñas, tokens, cédulas, correos, teléfonos, direcciones ni datos de cuenta.
+- No consultar ni divulgar información de otro usuario.
+- No afirmar que una cuenta está aprobada o activa sin consultar la información vigente.
+- Para datos dinámicos o privados, utilizar únicamente herramientas autorizadas y controles de acceso de la aplicación.

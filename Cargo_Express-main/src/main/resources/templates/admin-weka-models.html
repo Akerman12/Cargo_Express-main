@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelos Predictivos Weka | Global Control Center</title>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --neon-blue: #00f2ff;
+            --neon-orange: #ff6b00;
+            --neon-green: #10b981;
+            --bg-dark: #020617;
+            --card-bg: rgba(15, 23, 42, 0.85);
+            --input-bg: rgba(30, 41, 59, 0.6);
+            --border-glow: rgba(0, 242, 255, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            background: var(--bg-dark); 
+            color: var(--text-main); 
+            font-family: 'Inter', sans-serif; 
+            overflow-x: hidden;
+            min-height: 100vh;
+            /* War Room Background Grid */
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(0, 46, 125, 0.1) 0%, transparent 50%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
+        }
+
+        .header h1 { 
+            font-family: 'Orbitron', sans-serif; 
+            font-size: 2rem; 
+            letter-spacing: 5px;
+            color: var(--text-main);
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        .header-title-highlight {
+            color: var(--neon-blue);
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--neon-blue);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 10px 20px;
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+            transition: 0.3s;
+            background: rgba(0, 242, 255, 0.05);
+        }
+        
+        .btn-back:hover { 
+            background: rgba(0, 242, 255, 0.15);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        /* --- MODELS GRID --- */
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .model-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 30px;
+            border-top: 4px solid;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-cyan { border-top-color: var(--neon-blue); }
+        .card-orange { border-top-color: var(--neon-orange); }
+        .card-green { border-top-color: var(--neon-green); }
+
+        .model-subtitle {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+        }
+        
+        .card-cyan .model-subtitle { background: rgba(0, 242, 255, 0.1); color: var(--neon-blue); }
+        .card-orange .model-subtitle { background: rgba(255, 107, 0, 0.1); color: var(--neon-orange); }
+        .card-green .model-subtitle { background: rgba(16, 185, 129, 0.1); color: var(--neon-green); }
+
+        .model-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: white;
+            line-height: 1.3;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            background: var(--input-bg);
+            border: 1px solid rgba(255,255,255,0.05);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+            appearance: none;
+        }
+        
+        /* Custom select arrow */
+        select.form-control {
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 10px auto;
+        }
+
+        .form-control:focus {
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        select option {
+            background: var(--bg-dark);
+            color: white;
+        }
+
+        .btn-submit {
+            margin-top: 10px;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-cyan { background: var(--neon-blue); color: var(--bg-dark); }
+        .btn-cyan:hover { box-shadow: 0 0 20px rgba(0, 242, 255, 0.4); transform: translateY(-2px); }
+
+        .btn-orange { background: var(--neon-orange); color: white; }
+        .btn-orange:hover { box-shadow: 0 0 20px rgba(255, 107, 0, 0.4); transform: translateY(-2px); }
+
+        .btn-green { background: var(--neon-green); color: white; }
+        .btn-green:hover { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); transform: translateY(-2px); }
+
+        .footer-note {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 15px;
+            opacity: 0.6;
+        }
+
+        .result-box {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .result-cyan { background: rgba(0, 242, 255, 0.1); color: var(--neon-blue); border: 1px solid var(--neon-blue); box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); }
+        .result-orange { background: rgba(255, 107, 0, 0.1); color: var(--neon-orange); border: 1px solid var(--neon-orange); box-shadow: 0 0 15px rgba(255, 107, 0, 0.2); }
+        .result-green { background: rgba(16, 185, 129, 0.1); color: var(--neon-green); border: 1px solid var(--neon-green); box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+
+        /* --- ANIMATIONS --- */
+        .fade-in { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="container fade-in">
+        
+        <header class="header">
+            <div>
+                <h1><span class="header-title-highlight">WEKA</span> PREDICTIVE ENGINE</h1>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">Módulos de Inteligencia Artificial Avanzada</p>
+            </div>
+            <a th:href="@{/admin/warroom}" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i> VOLVER AL WAR ROOM
+            </a>
+        </header>
+
+        <div class="models-grid">
+            
+            <!-- Modelo 1 -->
+            <div class="model-card card-cyan">
+                <div>
+                    <span class="model-subtitle">Modelo de regresión logística</span>
+                    <h2 class="model-title">Predicción de Tiempo de Entrega</h2>
+                </div>
+
+                <div class="form-group">
+                    <label>Ciudad de Origen</label>
+                    <select class="form-control" id="m1-origen">
+                        <option th:each="c : ${ciudades}" th:value="${c}" th:text="${c}">BOGOTA</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ciudad de Destino</label>
+                    <select class="form-control" id="m1-destino">
+                        <option th:each="c : ${ciudades}" th:value="${c}" th:text="${c}">CALI</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Medio</label>
+                    <select class="form-control" id="m1-tipoMedio">
+                        <option>Terrestre</option>
+                        <option>Aéreo</option>
+                        <option>Marítimo</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Clima Actual</label>
+                    <select class="form-control" id="m1-clima">
+                        <option>Soleado</option>
+                        <option>Lluvioso</option>
+                        <option>Nublado</option>
+                        <option>Tormenta</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Servicio</label>
+                    <select class="form-control" id="m1-tipoServicio">
+                        <option>Premium</option>
+                        <option>Estándar</option>
+                        <option>Económico</option>
+                    </select>
+                </div>
+
+                <button class="btn-submit btn-cyan" id="m1-btn" onclick="evaluarTiempo()">
+                    <i class="fa-solid fa-microchip"></i> <span>EVALUAR REPORTE</span>
+                </button>
+
+                <div id="m1-result" class="result-box result-cyan"></div>
+
+                <div class="footer-note">Ejecución del modelo logístico en clúster para evaluación de tiempo estimado.</div>
+            </div>
+
+            <!-- Modelo 2 -->
+            <div class="model-card card-orange">
+                <div>
+                    <span class="model-subtitle">Modelo de clasificación random forest</span>
+                    <h2 class="model-title">Selección de Empaque Seguro</h2>
+                </div>
+
+                <div class="form-group">
+                    <label>Peso de la carga en (kg)</label>
+                    <input type="number" class="form-control" id="m2-peso" value="45">
+                </div>
+
+                <div class="form-group">
+                    <label>Volumen (largo x ancho x alto cm)</label>
+                    <input type="number" class="form-control" id="m2-volumen" value="12">
+                </div>
+
+                <div class="form-group">
+                    <label>Nivel de fragilidad de 1 a 10</label>
+                    <input type="number" class="form-control" id="m2-fragilidad" value="8">
+                </div>
+                
+                <div style="flex-grow: 1;"></div> <!-- Spacer -->
+
+                <button class="btn-submit btn-orange" id="m2-btn" onclick="clasificarEmpaque()">
+                    <i class="fa-solid fa-box-open"></i> <span>CLASIFICAR EMPAQUE</span>
+                </button>
+
+                <div id="m2-result" class="result-box result-orange"></div>
+
+                <div class="footer-note">Evaluación de nodo aleatorio en el bosque para clasificación óptima.</div>
+            </div>
+
+            <!-- Modelo 3 -->
+            <div class="model-card card-green">
+                <div>
+                    <span class="model-subtitle">Modelo de regresión lineal</span>
+                    <h2 class="model-title">Cálculo Ecológico de Huella CO2</h2>
+                </div>
+
+                <div class="form-group">
+                    <label>Distancia de la ruta estimada (km)</label>
+                    <input type="number" class="form-control" id="m3-distancia" value="560">
+                </div>
+
+                <div class="form-group">
+                    <label>Peso de la carga a transportar (kg)</label>
+                    <input type="number" class="form-control" id="m3-peso" value="70">
+                </div>
+
+                <div class="form-group">
+                    <label>Modalidad de Vuelo</label>
+                    <select class="form-control" id="m3-modalidad">
+                        <option>Furgoneta</option>
+                        <option>Avión de carga</option>
+                        <option>Camión pesado</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Combustible</label>
+                    <select class="form-control" id="m3-combustible">
+                        <option>Gasolina</option>
+                        <option>Diésel</option>
+                        <option>Eléctrico</option>
+                        <option>Híbrido</option>
+                    </select>
+                </div>
+
+                <div style="flex-grow: 1;"></div> <!-- Spacer -->
+
+                <button class="btn-submit btn-green" id="m3-btn" onclick="calcularCO2()">
+                    <i class="fa-solid fa-leaf"></i> <span>CALCULAR HUELLA CO2</span>
+                </button>
+
+                <div id="m3-result" class="result-box result-green"></div>
+
+                <div class="footer-note">Evaluación matemática para cálculo de estimación de carbono.</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function postData(url, data) {
+            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                },
+                body: JSON.stringify(data)
+            });
+            return response.json();
+        }
+
+        async function evaluarTiempo() {
+            const btn = document.getElementById('m1-btn');
+            const span = btn.querySelector('span');
+            const originalText = span.innerText;
+            const resultBox = document.getElementById('m1-result');
+            
+            span.innerText = "CALCULANDO...";
+            resultBox.style.display = 'none';
+
+            const payload = {
+                origen: document.getElementById('m1-origen').value,
+                destino: document.getElementById('m1-destino').value,
+                tipoMedio: document.getElementById('m1-tipoMedio').value,
+                clima: document.getElementById('m1-clima').value,
+                tipoServicio: document.getElementById('m1-tipoServicio').value
+            };
+
+            try {
+                const result = await postData('/admin/weka/tiempo', payload);
+                span.innerText = originalText;
+                resultBox.innerText = result.resultado;
+                resultBox.style.display = 'block';
+            } catch (e) {
+                span.innerText = originalText;
+                resultBox.innerText = "ERROR DE CONEXIÓN";
+                resultBox.style.display = 'block';
+            }
+        }
+
+        async function clasificarEmpaque() {
+            const btn = document.getElementById('m2-btn');
+            const span = btn.querySelector('span');
+            const originalText = span.innerText;
+            const resultBox = document.getElementById('m2-result');
+
+            span.innerText = "CLASIFICANDO...";
+            resultBox.style.display = 'none';
+
+            const payload = {
+                peso: document.getElementById('m2-peso').value,
+                volumen: document.getElementById('m2-volumen').value,
+                fragilidad: document.getElementById('m2-fragilidad').value
+            };
+
+            try {
+                const result = await postData('/admin/weka/empaque', payload);
+                span.innerText = originalText;
+                resultBox.innerText = result.resultado;
+                resultBox.style.display = 'block';
+            } catch (e) {
+                span.innerText = originalText;
+                resultBox.innerText = "ERROR DE CONEXIÓN";
+                resultBox.style.display = 'block';
+            }
+        }
+
+        async function calcularCO2() {
+            const btn = document.getElementById('m3-btn');
+            const span = btn.querySelector('span');
+            const originalText = span.innerText;
+            const resultBox = document.getElementById('m3-result');
+
+            span.innerText = "CALCULANDO...";
+            resultBox.style.display = 'none';
+
+            const payload = {
+                distancia: document.getElementById('m3-distancia').value,
+                peso: document.getElementById('m3-peso').value,
+                modalidad: document.getElementById('m3-modalidad').value,
+                combustible: document.getElementById('m3-combustible').value
+            };
+
+            try {
+                const result = await postData('/admin/weka/co2', payload);
+                span.innerText = originalText;
+                resultBox.innerText = result.resultado;
+                resultBox.style.display = 'block';
+            } catch (e) {
+                span.innerText = originalText;
+                resultBox.innerText = "ERROR DE CONEXIÓN";
+                resultBox.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

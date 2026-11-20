@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Logístico | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/jpg" th:href="@{/imagenes/LOGO Cargo Expres.jpg}">
+    <link rel="stylesheet" th:href="@{/css/sai-theme.css}">
+
+    <style>
+        :root {
+            --gls-blue: #002855;
+            --gls-yellow: #FF6600;
+            --bg-light: #f4f7fa;
+            --white: #ffffff;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            
+            --pending: #f59e0b;
+            --transit: #3b82f6;
+            --delivered: #10b981;
+            --cancelled: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            display: flex;
+            min-height: 100vh;
+        }        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 270px;
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            padding: 30px 15px;
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo { text-align: center; margin-bottom: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+        .sidebar-logo img { width: 180px; height: auto; border-radius: 8px; }
+
+        .nav-label { font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin: 20px 0 10px 10px; font-weight: 700; letter-spacing: 1px; }
+        
+        .sidebar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+
+        .sidebar a:hover, .sidebar a.active { background: #f1f5f9; color: var(--gls-blue); }
+        .sidebar a i { width: 20px; text-align: center; font-size: 18px; }
+
+        .sidebar a.btn-logout { margin-top: auto; color: #ef4444; padding-top: 20px; }
+        .sidebar a.btn-logout:hover { background: #fef2f2; }
+
+        /* --- MAIN CONTENT --- */
+        .main-content {
+            margin-left: 270px;
+            flex: 1;
+            padding: 40px;
+            min-width: 0; /* Prevents flex items from overflowing */
+        }
+
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 35px;
+            gap: 20px;
+        }
+        .header-info h1 { font-size: 28px; font-weight: 800; color: var(--gls-blue); letter-spacing: -0.5px; }
+        .header-info p { color: var(--text-muted); font-size: 14px; margin-top: 5px; }
+
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 18px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-icon {
+            width: 45px; height: 45px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+
+        .stat-info h4 { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; }
+        .stat-info span { font-size: 20px; font-weight: 800; color: var(--gls-blue); }
+
+        /* Filter Chips */
+        .filters { display: flex; gap: 12px; margin-bottom: 25px; align-items: center; flex-wrap: wrap; }
+        .filter-chip {
+            padding: 8px 18px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            color: var(--text-muted);
+        }
+        .filter-chip.active { background: var(--gls-blue); color: white; border-color: var(--gls-blue); }
+
+        /* Search Box */
+        .search-box { position: relative; flex: 1; min-width: 300px; }
+        .search-box i { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            outline: none;
+            font-size: 14px;
+        }
+
+        /* Table */
+        .table-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th { 
+            background: #f8fafc; padding: 15px 20px; text-align: left; 
+            font-size: 11px; text-transform: uppercase; font-weight: 800; color: var(--text-muted);
+            border-bottom: 2px solid var(--bg-light);
+        }
+        td { padding: 15px 20px; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+        tr:hover td { background: #fafafa; }
+
+        .guia-tag {
+            font-weight: 800; color: var(--gls-blue); background: #f1f5f9;
+            padding: 5px 10px; border-radius: 6px; font-size: 12px;
+            display: inline-block;
+        }
+
+        .badge {
+            padding: 5px 10px; border-radius: 50px; font-size: 10px; font-weight: 800;
+            text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .badge-pendiente { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+        .badge-transito { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .badge-entregado { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .badge-cancelado { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .badge-recogido { background: #ecfeff; color: #155e75; border: 1px solid #a5f3fc; }
+        .badge-norecogido { background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; }
+        .badge-ensucursal { background: #f5f3ff; color: #5b21b6; border: 1px solid #ddd6fe; }
+        .badge-entránsito { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .badge-novedad { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        .assign-tabs { display: flex; gap: 8px; margin: 14px 0 10px; }
+        .assign-tab { flex: 1; padding: 11px 8px; border-radius: 12px; border: 1px solid var(--border); background: #f8fafc; font-weight: 800; font-size: 12px; cursor: pointer; color: var(--text-muted); }
+        .assign-tab.active { background: var(--gls-blue); color: #fff; border-color: var(--gls-blue); }
+        .assign-tab.disabled { opacity: .45; cursor: not-allowed; }
+        .assign-info { font-size: 12px; padding: 10px 12px; border-radius: 10px; margin: 0 0 12px; text-align: left; background: #eff6ff; color: #1e3a8a; }
+        .assign-info.warn { background: #fef3c7; color: #92400e; }
+        .badge-eliminada { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; opacity: 0.7; }
+
+        .actions-cell { display: flex; gap: 8px; }
+        .action-btn {
+            width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--border); background: white; color: var(--text-muted); cursor: pointer; transition: 0.3s;
+            text-decoration: none;
+        }
+        .action-btn:hover { background: var(--gls-blue); color: white; border-color: var(--gls-blue); }
+        .btn-delete:hover { background: var(--cancelled); color: white; border-color: var(--cancelled); }
+
+        /* Modal */
+        .modal { display: none; position: fixed; z-index: 2000; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
+        .modal-card { background: white; padding: 40px; border-radius: 25px; width: 450px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-card h3 { font-size: 24px; color: var(--gls-blue); margin-bottom: 15px; font-weight: 800; }
+        .modal-card p { color: var(--text-muted); margin-bottom: 30px; line-height: 1.6; }
+        .modal-btns { display: flex; gap: 15px; }
+        .m-btn { flex: 1; padding: 15px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; transition: 0.3s; }
+        .m-confirm { background: var(--cancelled); color: white; }
+        .m-cancel { background: var(--bg-light); color: var(--text-muted); }
+
+        @media (max-width: 1200px) {
+            .stats-container { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div th:replace="~{fragments/sai-sidebar :: sidebar(${esVistaGlobal} ? 'todas' : 'guias')}"></div>
+
+    <main class="main-content">
+        <header>
+            <div class="header-info">
+                <h1>Inventario Logístico</h1>
+                <p>Módulo de gestión detallada de despachos y auditoría de carga.</p>
+            </div>
+            
+            <a th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" 
+               th:href="@{/guias/crear}" 
+               style="background: var(--gls-yellow); color: var(--text-dark); padding: 12px 25px; border-radius: 12px; font-weight: 800; text-decoration: none; box-shadow: 0 4px 15px rgba(255, 204, 0, 0.3);">
+                <i class="fa-solid fa-file-circle-plus"></i> NUEVO DESPACHO
+            </a>
+        </header>
+
+        <!-- Mensajes de asignación (éxito / capacidad superada / sin vehículo) -->
+        <div th:if="${mensaje}" style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 14px 20px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; font-size: 13px;">
+            <i class="fa-solid fa-circle-check"></i> <span th:text="${mensaje}"></span>
+        </div>
+        <div th:if="${error}" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 14px 20px; border-radius: 12px; margin-bottom: 20px; font-weight: 700; font-size: 13px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span th:text="${error}"></span>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fff7ed; color: #f59e0b;"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                <div class="stat-info">
+                    <h4>Pendientes</h4>
+                    <span id="countPendiente">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #eff6ff; color: #3b82f6;"><i class="fa-solid fa-truck-fast"></i></div>
+                <div class="stat-info">
+                    <h4>En Tránsito</h4>
+                    <span id="countTransito">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #f0fdf4; color: #10b981;"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="stat-info">
+                    <h4>Entregados</h4>
+                    <span id="countEntregado">0</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #fdf2f2; color: #ef4444;"><i class="fa-solid fa-box-archive"></i></div>
+                <div class="stat-info">
+                    <h4>Total Guías</h4>
+                    <span th:text="${guias.size()}">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="filters">
+            <div class="filter-chip active" data-filter="all">Todas</div>
+            <div class="filter-chip" data-filter="Pendiente">Pendientes</div>
+            <div class="filter-chip" data-filter="Recogido">Recogidos</div>
+            <div class="filter-chip" data-filter="No Recogido">No Recogidos</div>
+            <div class="filter-chip" data-filter="En Sucursal">En Sucursal</div>
+            <div class="filter-chip" data-filter="En Tránsito">En Tránsito</div>
+            <div class="filter-chip" data-filter="Entregado">Entregados</div>
+            
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="tableSearch" placeholder="Rastrear por ID, cliente, ciudad o remitente...">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="mainTable">
+                <thead>
+                    <tr>
+                        <th>Cód. Rastreo</th>
+                        <th>Destinatario</th>
+                        <th>Origen / Destino</th>
+                        <th>Deptos.</th>
+                        <th>Carga</th>
+                        <th>Valor Total</th>
+                        <th>Operador</th>
+                        <th>Repartidor</th>
+                        <th>Estado Actual</th>
+                        <th>Pago</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="guia : ${guias}" th:data-status="${guia.estado}">
+                        <td><span class="guia-tag" th:text="'SAI-' + ${guia.id}"></span></td>
+                        <td>
+                            <div style="font-weight: 700;" th:text="${guia.destinatario}"></div>
+                            <div style="font-size: 11px; color: var(--text-muted);" th:text="${guia.remitente}"></div>
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 600;">
+                                <span th:text="${guia.ciudadOrigen}"></span>
+                                <i class="fa-solid fa-arrow-right-long" style="color: var(--text-muted); font-size: 11px;"></i>
+                                <span th:text="${guia.ciudadDestino}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-size: 11px; color: var(--text-muted);">
+                                <span th:text="${guia.departamentoOrigen}"></span>
+                                <i class="fa-solid fa-caret-right"></i>
+                                <span th:text="${guia.departamentoDestino}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700;"><i class="fa-solid fa-weight-hanging" style="font-size: 11px;"></i> <span th:text="${guia.pesoKg} + ' kg'"></span></div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 800; color: #059669;" th:text="'$' + ${#numbers.formatDecimal(guia.precio, 1, 0)}"></div>
+                        </td>
+                        <td>
+                            <div th:if="${guia.modificadoPor}" style="font-size: 11px; color: var(--text-muted);">
+                                <i class="fa-solid fa-user-gear"></i> <span th:text="${guia.modificadoPor}"></span>
+                            </div>
+                            <div th:unless="${guia.modificadoPor}" style="font-size: 11px; color: #cbd5e1;">Sin auditoría</div>
+                        </td>
+                        <td>
+                            <div th:if="${guia.repartidorAsignado != null}">
+                                <span class="badge" style="background: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                                    <i class="fa-solid fa-truck"></i> <span th:text="${guia.repartidorAsignado.nombre}"></span>
+                                    <span th:if="${guia.repartidorAsignado.vehiculo != null}" th:text="' [' + ${guia.repartidorAsignado.vehiculo.placa} + ']'" style="font-weight: 800;"></span>
+                                </span>
+                            </div>
+                            <div th:unless="${guia.repartidorAsignado != null}">
+                                <span class="badge" style="background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">Sin asignar</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span th:class="'badge badge-' + ${#strings.toLowerCase(guia.estado).replace(' ', '')}">
+                                <i th:class="'fa-solid ' + (
+                                    ${guia.estado == 'Pendiente'} ? 'fa-clock' : (
+                                    ${guia.estado == 'Recogido'} ? 'fa-box' : (
+                                    ${guia.estado == 'No Recogido'} ? 'fa-ban' : (
+                                    ${guia.estado == 'En Sucursal' or guia.estado == 'En Bodega'} ? 'fa-warehouse' : (
+                                    ${guia.estado == 'Novedad'} ? 'fa-triangle-exclamation' : (
+                                    ${guia.estado == 'En Tránsito'} ? 'fa-truck' : 'fa-check-double'))))))"></i>
+                                <span th:text="${guia.estado}"></span>
+                            </span>
+                        </td>
+                        <td>
+                            <span th:class="'badge ' + (${guia.estadoPago == 'PAGADO'} ? 'badge-entregado' : 'badge-pendiente')">
+                                <i th:class="'fa-solid ' + (${guia.estadoPago == 'PAGADO'} ? 'fa-check-circle' : 'fa-credit-card')"></i>
+                                <span th:text="${guia.estadoPago}"></span>
+                            </span>
+                        </td>
+                        <td class="actions-cell">
+                            <!-- BOTÓN DE PAGO UNIVERSAL (Visible para todos si está PENDIENTE) -->
+                            <div th:if="${guia.estadoPago == 'PENDIENTE'}" style="margin-right: 8px;">
+                                <a th:href="@{/pago/{id}(id=${guia.id})}" class="action-btn" style="color: #059669; border-color: #a7f3d0; background: #ecfdf5; width: auto; padding: 0 15px; gap: 5px;" title="Realizar Pago">
+                                    <i class="fa-solid fa-wallet"></i> <span style="font-size: 11px; font-weight: 800;">PAGAR</span>
+                                </a>
+                            </div>
+
+                            <!-- ACCIONES POR ROL -->
+                            <div th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}" style="display: flex; gap: 8px;">
+                                <button class="action-btn" 
+                                        th:data-id="${guia.id}" 
+                                        th:data-peso="${guia.pesoKg}" 
+                                        th:data-repid="${guia.repartidorAsignado != null ? guia.repartidorAsignado.id : ''}" 
+                                        th:data-estado="${guia.estado}"
+                                        th:data-rep-recogida="${guia.repartidorRecogida != null ? guia.repartidorRecogida.id : ''}"
+                                        th:data-rep-entrega="${guia.repartidorEntrega != null ? guia.repartidorEntrega.id : ''}"
+                                        th:data-region-origen="${guia.regionOrigenNombre}"
+                                        th:data-region-destino="${guia.regionDestinoNombre}"
+                                        onclick="openAssignModal(this)" 
+                                        style="color: #4338ca; border-color: #c7d2fe;" 
+                                        title="Asignar Repartidor">
+                                    <i class="fa-solid fa-user-plus"></i>
+                                </button>
+                                <a th:href="@{/guias/etiqueta/{id}(id=${guia.id})}" class="action-btn" style="color: #6366f1; border-color: #c7d2fe;" title="Imprimir Etiqueta"><i class="fa-solid fa-print"></i></a>
+                                <a th:href="@{/guias/editar/{id}(id=${guia.id})}" class="action-btn" title="Gestionar"><i class="fa-solid fa-sliders"></i></a>
+                                <button class="action-btn btn-delete" th:onclick="'confirmDelete(' + ${guia.id} + ')'" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+
+                            <div th:if="${#authorization.expression('hasRole(''ROLE_CLIENTE'')') and guia.usuario.username == #authentication.name}" style="display: flex; gap: 8px;">
+                                <!-- Botón Recibo si ya pagó -->
+                                <a th:if="${guia.estadoPago == 'PAGADO'}" th:href="@{'/pago/recibo/' + ${guia.id}}" class="action-btn" style="color: #0369a1; border-color: #bae6fd; background: #f0f9ff; width: auto; padding: 0 15px; gap: 5px;" title="Descargar Recibo">
+                                    <i class="fa-solid fa-file-invoice"></i> <span style="font-size: 11px; font-weight: 800;">RECIBO</span>
+                                </a>
+                                <a th:href="@{/guias/etiqueta/{id}(id=${guia.id})}" class="action-btn" style="color: #6366f1; border-color: #c7d2fe;" title="Imprimir Etiqueta"><i class="fa-solid fa-print"></i></a>
+                                <a th:href="@{/guias/editar/{id}(id=${guia.id})}" class="action-btn" title="Editar"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <button class="action-btn btn-delete" th:onclick="'confirmDelete(' + ${guia.id} + ')'" title="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+
+                            <!-- VISTA: REPARTIDOR (Solo lectura excepto el botón de pago si lo desea) -->
+                            <div th:if="${#authorization.expression('hasRole(''ROLE_REPARTIDOR'')') and guia.estadoPago == 'PAGADO'}" 
+                                 style="color: var(--text-muted); font-size: 11px; font-weight: 600;">
+                                <i class="fa-solid fa-eye"></i> Solo Lectura
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="deleteModal" class="modal">
+        <div class="modal-card">
+            <h3>¿Retirar Guía de la Vista?</h3>
+            <p>La guía <strong id="delId"></strong> dejará de mostrarse en la interfaz operativa, pero su registro permanecerá guardado en la base de datos.</p>
+            <div class="modal-btns">
+                <button class="m-btn m-cancel" onclick="closeModal()">CANCELAR</button>
+                <button class="m-btn m-confirm" id="btnDoDelete">QUITAR DE LA VISTA</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Asignar Repartidor: dos fases (1. Recogida, 2. Entrega) -->
+    <div id="assignModal" class="modal">
+        <div class="modal-card" style="width: 540px;">
+            <h3>Asignar Repartidor</h3>
+            <p style="margin-bottom: 6px;">Guía <strong id="assignIdDisplay"></strong> (<strong id="assignPesoDisplay"></strong> kg) · Estado: <strong id="assignEstadoDisplay"></strong></p>
+
+            <div class="assign-tabs">
+                <button type="button" class="assign-tab" id="tabRecogida" onclick="selectFase('RECOGIDA')">1. Ruta de recogida</button>
+                <button type="button" class="assign-tab" id="tabEntrega" onclick="selectFase('ENTREGA')">2. Ruta de entrega</button>
+            </div>
+            <p id="assignFaseInfo" class="assign-info"></p>
+
+            <p th:if="${#lists.isEmpty(repartidores)}" class="assign-info warn">
+                <i class="fa-solid fa-triangle-exclamation"></i> No hay repartidores con furgoneta asignada. Registre una furgoneta y vincule un conductor en <a th:href="@{/admin/vehiculos}">Gestión de Flota</a>.
+            </p>
+            <form th:action="@{/guias/asignar-repartidor}" method="post">
+                <input type="hidden" name="guiaId" id="assignGuiaId">
+                <input type="hidden" name="fase" id="assignFase" value="RECOGIDA">
+                <select name="repartidorId" id="assignRepartidorSelect" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 12px; border: 1px solid var(--border); outline: none;">
+                    <option value="">-- Sin asignar (Remover asignación) --</option>
+                    <option th:each="rep : ${repartidores}" th:value="${rep.id}" th:text="${rep.displayLabel + (rep.regionEtiqueta != null ? ' · ' + rep.regionEtiqueta : ' · SIN REGIÓN')}"
+                            th:attr="data-region=${rep.regionOperacion}"></option>
+                </select>
+                <div class="modal-btns">
+                    <button type="button" class="m-btn m-cancel" onclick="closeAssignModal()">CANCELAR</button>
+                    <button type="submit" class="m-btn" id="btnGuardarAsignacion" style="background: var(--gls-blue); color: white;">GUARDAR ASIGNACIÓN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- Contadores en tiempo real --- //
+        function updateStats() {
+            const rows = document.querySelectorAll('#mainTable tbody tr');
+            let pend = 0, trans = 0, ent = 0;
+            rows.forEach(r => {
+                const s = r.dataset.status;
+                if(s === 'Pendiente' || s === 'No Recogido') pend++;
+                if(s === 'En Tránsito' || s === 'En Reparto' || s === 'Recogido' || s === 'En Sucursal' || s === 'En Bodega') trans++;
+                if(s === 'Entregado') ent++;
+            });
+            document.getElementById('countPendiente').innerText = pend;
+            document.getElementById('countTransito').innerText = trans;
+            document.getElementById('countEntregado').innerText = ent;
+        }
+        updateStats();
+
+        // --- Buscador --- //
+        document.getElementById('tableSearch').addEventListener('keyup', function() {
+            const val = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#mainTable tbody tr');
+            rows.forEach(r => {
+                r.style.display = r.innerText.toLowerCase().includes(val) ? '' : 'none';
+            });
+        });
+
+        // --- Filtros por Chip --- //
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                
+                const filter = this.dataset.filter;
+                const rows = document.querySelectorAll('#mainTable tbody tr');
+                
+                rows.forEach(r => {
+                    if(filter === 'all') {
+                        r.style.display = '';
+                    } else if(filter === 'En Tránsito') {
+                        r.style.display = (r.dataset.status === 'En Tránsito' || r.dataset.status === 'En Reparto') ? '' : 'none';
+                    } else {
+                        r.style.display = r.dataset.status === filter ? '' : 'none';
+                    }
+                });
+            });
+        });
+
+        // --- Modal de Eliminación --- //
+        const modal = document.getElementById('deleteModal');
+        let currentId = null;
+
+        function confirmDelete(id) {
+            currentId = id;
+            document.getElementById('delId').innerText = 'SAI-' + id;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() { modal.style.display = 'none'; }
+
+        document.getElementById('btnDoDelete').addEventListener('click', function() {
+            if(currentId) {
+                this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Procesando...';
+                window.location.href = '/guias/eliminar/' + currentId;
+            }
+        });
+
+        // --- Modal de Asignación --- //
+        const assignModal = document.getElementById('assignModal');
+        
+        const NOMBRE_REGION = {
+            CARIBE: 'Región Caribe', ANDINA: 'Región Andina', PACIFICA: 'Región Pacífica',
+            ORINOQUIA: 'Región de la Orinoquía', AMAZONIA: 'Región Amazónica', INSULAR: 'Región Insular'
+        };
+        let assignCtx = null;
+
+        function openAssignModal(btn) {
+            const d = btn.dataset;
+            assignCtx = {
+                estado: d.estado || 'Pendiente',
+                repRecogida: d.repRecogida || '',
+                repEntrega: d.repEntrega || '',
+                regionOrigen: d.regionOrigen || '',
+                regionDestino: d.regionDestino || ''
+            };
+            document.getElementById('assignIdDisplay').innerText = 'SAI-' + d.id;
+            document.getElementById('assignPesoDisplay').innerText = d.peso;
+            document.getElementById('assignEstadoDisplay').innerText = assignCtx.estado;
+            document.getElementById('assignGuiaId').value = d.id;
+
+            const est = assignCtx.estado;
+            const puedeRecogida = (est === 'Pendiente' || est === 'No Recogido');
+            const puedeEntrega = (est === 'En Sucursal' || est === 'En Bodega');
+            document.getElementById('tabRecogida').classList.toggle('disabled', !puedeRecogida);
+            document.getElementById('tabEntrega').classList.toggle('disabled', !puedeEntrega);
+            document.getElementById('tabEntrega').title = puedeEntrega ? ''
+                : 'Se habilita cuando la recogida termina y la guía está En Sucursal.';
+            assignCtx.puedeRecogida = puedeRecogida;
+            assignCtx.puedeEntrega = puedeEntrega;
+
+            selectFase(puedeEntrega && !puedeRecogida ? 'ENTREGA' : 'RECOGIDA');
+            assignModal.style.display = 'flex';
+        }
+
+        function selectFase(fase) {
+            if (!assignCtx) return;
+            const habilitada = fase === 'RECOGIDA' ? assignCtx.puedeRecogida : assignCtx.puedeEntrega;
+            document.getElementById('assignFase').value = fase;
+            document.getElementById('tabRecogida').classList.toggle('active', fase === 'RECOGIDA');
+            document.getElementById('tabEntrega').classList.toggle('active', fase === 'ENTREGA');
+
+            const region = fase === 'RECOGIDA' ? assignCtx.regionOrigen : assignCtx.regionDestino;
+            const select = document.getElementById('assignRepartidorSelect');
+            const info = document.getElementById('assignFaseInfo');
+            const guardar = document.getElementById('btnGuardarAsignacion');
+            let visibles = 0;
+            Array.from(select.options).forEach(opt => {
+                if (!opt.value) { opt.hidden = false; opt.disabled = false; return; }
+                const ok = !!region && opt.dataset.region === region;
+                opt.hidden = !ok;
+                opt.disabled = !ok;
+                if (ok) visibles++;
+            });
+            const actual = fase === 'RECOGIDA' ? assignCtx.repRecogida : assignCtx.repEntrega;
+            const opcion = Array.from(select.options).find(o => o.value === actual && !o.disabled);
+            select.value = opcion ? actual : '';
+            select.disabled = !habilitada;
+            guardar.disabled = !habilitada;
+            guardar.style.opacity = habilitada ? '1' : '.5';
+
+            info.classList.remove('warn');
+            if (!habilitada) {
+                info.classList.add('warn');
+                info.textContent = fase === 'RECOGIDA'
+                    ? 'La recogida solo se asigna a guías Pendientes o No Recogidas (estado actual: ' + assignCtx.estado + ').'
+                    : 'La entrega se habilita cuando termina la recogida y la guía está En Sucursal (estado actual: ' + assignCtx.estado + ').';
+            } else if (!region) {
+                info.classList.add('warn');
+                info.textContent = 'No se pudo determinar la región del departamento de ' + (fase === 'RECOGIDA' ? 'origen' : 'destino') + ' de esta guía.';
+            } else if (visibles === 0) {
+                info.classList.add('warn');
+                info.textContent = 'No hay repartidores con furgoneta en la ' + (NOMBRE_REGION[region] || region) + '.';
+            } else {
+                info.textContent = (fase === 'RECOGIDA' ? 'Recogida en la ' : 'Entrega en la ') + (NOMBRE_REGION[region] || region)
+                    + ': solo se listan repartidores de esa región.';
+            }
+        }
+
+        function closeAssignModal() { assignModal.style.display = 'none'; }
+
+        window.onclick = function(e) { 
+            if(e.target === modal) closeModal(); 
+            if(e.target === assignModal) closeAssignModal();
+        }
+    </script>
+</body>
+</html>

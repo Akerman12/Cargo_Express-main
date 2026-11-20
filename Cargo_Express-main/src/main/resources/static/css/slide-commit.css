@@ -1,0 +1,210 @@
+/*
+ * SlideCommit - "desliza para pagar" (version vanilla para Thymeleaf).
+ * Replica el comportamiento del componente React: arrastre con rebote,
+ * estados de exito/error, teclado y reduced-motion.
+ */
+
+.slide-commit {
+    --sc-track: #262626;
+    --sc-ink: #f5f5f5;
+    --sc-ok: #22c55e;
+    --sc-no: #e5484d;
+    --sc-on-ink: #111111;
+    --sc-on-ok: #ffffff;
+    --sc-on-no: #ffffff;
+    --sc-radius: 28px;
+    --sc-grip: 48px;
+    --sc-grip-r: 24px;
+    --sc-pad: 4px;
+    --sc-font: 14px;
+
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 56px;
+    font-family: inherit;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.slide-commit[data-disabled] {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.slide-commit__track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--sc-radius);
+    background: var(--sc-track);
+    cursor: grab;
+    touch-action: none;
+    overflow: hidden;
+    outline: none;
+}
+
+.slide-commit[data-held] .slide-commit__track { cursor: grabbing; }
+.slide-commit[data-phase='pending'] .slide-commit__track,
+.slide-commit[data-phase='done'] .slide-commit__track { cursor: default; }
+
+.slide-commit__label {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    font-size: var(--sc-font);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.52);
+    transition: opacity 160ms ease;
+}
+
+.slide-commit__text--error {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--sc-no);
+    font-size: var(--sc-font);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    opacity: 0;
+    filter: blur(2px);
+    transition: opacity 180ms ease, filter 180ms ease;
+}
+
+.slide-commit[data-phase='error'] .slide-commit__label { opacity: 0 !important; }
+.slide-commit[data-phase='error'] .slide-commit__text--error { opacity: 1; filter: none; }
+
+.slide-commit__capsule {
+    position: absolute;
+    top: var(--sc-pad);
+    left: var(--sc-pad);
+    height: calc(100% - var(--sc-pad) * 2);
+    width: var(--sc-grip);
+    border-radius: var(--sc-grip-r);
+    background: var(--sc-ink);
+    color: var(--sc-on-ink);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    will-change: width;
+    transition: background-color 180ms ease, color 180ms ease;
+}
+
+.slide-commit[data-phase='done'] .slide-commit__capsule {
+    background: var(--sc-ok);
+    color: var(--sc-on-ok);
+    box-shadow: 0 6px 18px rgba(34, 197, 94, 0.35);
+}
+
+.slide-commit[data-phase='error'] .slide-commit__capsule {
+    background: var(--sc-no);
+    color: var(--sc-on-no);
+    box-shadow: 0 6px 18px rgba(229, 72, 77, 0.32);
+}
+
+.slide-commit__arrow,
+.slide-commit__spin,
+.slide-commit__done {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.slide-commit__arrow {
+    left: 0;
+    width: 100%;
+    opacity: 1;
+    transition: opacity 160ms ease;
+}
+
+.slide-commit[data-phase='pending'] .slide-commit__arrow,
+.slide-commit[data-phase='done'] .slide-commit__arrow,
+.slide-commit[data-phase='error'] .slide-commit__arrow { opacity: 0; }
+
+.slide-commit__spin {
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    transition: opacity 160ms ease;
+}
+
+.slide-commit[data-phase='pending'] .slide-commit__spin { opacity: 1; }
+
+.slide-commit__done {
+    inset: 0;
+    width: 100%;
+    gap: 8px;
+    opacity: 0;
+    font-size: var(--sc-font);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    transition: opacity 180ms ease;
+}
+
+.slide-commit[data-phase='done'] .slide-commit__done { opacity: 1; }
+.slide-commit[data-phase='error'] .slide-commit__done { opacity: 0; }
+
+.slide-commit__arrow svg,
+.slide-commit__done svg,
+.slide-commit__spinner { display: block; }
+
+.slide-commit__spinner {
+    animation: slide-commit-spin 0.9s linear infinite;
+}
+
+@keyframes slide-commit-spin {
+    to { transform: rotate(360deg); }
+}
+
+.slide-commit__capsule:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--sc-track), 0 0 0 3px rgba(14, 165, 233, 0.45);
+}
+
+.slide-commit__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+@keyframes slide-commit-shake {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-6px); }
+    32% { transform: translateX(6px); }
+    50% { transform: translateX(-4px); }
+    68% { transform: translateX(4px); }
+    84% { transform: translateX(-1px); }
+}
+
+.slide-commit[data-phase='error'] .slide-commit__track {
+    animation: slide-commit-shake 440ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .slide-commit__capsule,
+    .slide-commit__label,
+    .slide-commit__done,
+    .slide-commit__text--error { transition: none !important; }
+    .slide-commit[data-phase='error'] .slide-commit__track { animation: none; }
+    .slide-commit__spinner { animation: slide-commit-breathe 1.4s ease-in-out infinite; }
+
+    @keyframes slide-commit-breathe {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+}

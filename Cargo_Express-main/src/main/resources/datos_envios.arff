@@ -1,0 +1,33 @@
+@relation envios_tiempo
+
+@attribute origen {'Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Cúcuta', 'Soledad', 'Ibagué', 'Bucaramanga', 'Soacha', 'Villavicencio', 'Santa Marta', 'Valledupar', 'Bello', 'Pereira', 'Manizales', 'Montería', 'Buenaventura', 'Pasto', 'Neiva', 'Palmira', 'Armenia', 'Popayán', 'Sincelejo', 'Itagüí', 'Floridablanca', 'Envigado', 'Tuluá', 'Barrancabermeja', 'Cartago', 'Maicao', 'Florencia', 'Girardot', 'Dosquebradas', 'Sabaneta', 'Riohacha', 'Fusagasugá', 'Tunja', 'Piedecuesta', 'Yopal', 'Quibdó', 'Zipaquirá', 'Turbo', 'Santander de Quilichao', 'Rionegro', 'Caucasia', 'Ciénaga', 'Malambo', 'Magangué', 'Arauca'}
+@attribute destino {'Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Cúcuta', 'Soledad', 'Ibagué', 'Bucaramanga', 'Soacha', 'Villavicencio', 'Santa Marta', 'Valledupar', 'Bello', 'Pereira', 'Manizales', 'Montería', 'Buenaventura', 'Pasto', 'Neiva', 'Palmira', 'Armenia', 'Popayán', 'Sincelejo', 'Itagüí', 'Floridablanca', 'Envigado', 'Tuluá', 'Barrancabermeja', 'Cartago', 'Maicao', 'Florencia', 'Girardot', 'Dosquebradas', 'Sabaneta', 'Riohacha', 'Fusagasugá', 'Tunja', 'Piedecuesta', 'Yopal', 'Quibdó', 'Zipaquirá', 'Turbo', 'Santander de Quilichao', 'Rionegro', 'Caucasia', 'Ciénaga', 'Malambo', 'Magangué', 'Arauca'}
+@attribute tipo_carga {'Sobre', 'Paquete', 'Caja', 'Palet', 'Suelta', 'Consolidada', 'Frágil', 'Peligrosa', 'Valor Declarado', 'Especial', 'Express', 'Irregular'}
+@attribute tiempo_dias numeric
+
+@data
+'Bogotá','Medellín','Paquete',2
+'Bogotá','Cali','Palet',3
+'Medellín','Bello','Sobre',1
+'Barranquilla','Santa Marta','Caja',1
+'Bogotá','Soacha','Express',1
+'Cali','Buenaventura','Consolidada',2
+'Bucaramanga','Piedecuesta','Sobre',1
+'Medellín','Bogotá','Valor Declarado',2
+'Cartagena','Bogotá','Palet',4
+'Pasto','Riohacha','Irregular',7
+'Pereira','Manizales','Caja',1
+'Armenia','Pereira','Sobre',1
+'Bogotá','Villavicencio','Frágil',2
+'Cúcuta','Bucaramanga','Paquete',2
+'Montería','Sincelejo','Express',1
+'Bogotá','Barranquilla','Palet',4
+'Cali','Popayán','Caja',2
+'Medellín','Envigado','Sobre',1
+'Tunja','Bogotá','Paquete',2
+'Riohacha','Valledupar','Caja',2
+'Quibdó','Medellín','Suelta',3
+'Florencia','Neiva','Paquete',2
+'Yopal','Bogotá','Consolidada',3
+'Cartagena','Barranquilla','Express',1
+'Bogotá','Bogotá','Sobre',1

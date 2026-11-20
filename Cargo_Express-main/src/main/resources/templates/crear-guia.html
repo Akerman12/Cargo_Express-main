@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Despachar Guía | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/jpg" th:href="@{/imagenes/LOGO Cargo Expres.jpg}">
+    
+    <!-- Leaflet para Mapas (Free & No API Key) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" th:href="@{/css/sai-theme.css}">
+
+    <style>
+        :root {
+            --brand-blue: #002855;       
+            --brand-blue-light: #1A4D80; 
+            --brand-orange: #FF6600;     
+            --brand-orange-hover: #E65C00;
+            --bg-main: #F4F7F9;          
+            --white: #FFFFFF;
+            --text-dark: #1E293B;        
+            --text-muted: #64748B;       
+            --border-light: #E2E8F0;
+            
+            --danger-bg: #FEE2E2;
+            --danger-text: #991B1B;
+            --success: #16A34A;
+            --accent-cyan: #0EA5E9;
+            --ai-bg: #EFF6FF;
+            --ai-text: #2563EB;
+            --ai-glow: 0 0 15px rgba(37, 99, 235, 0.2);
+
+            --shadow-sm: 0 2px 4px rgba(0, 40, 85, 0.04);
+            --shadow-md: 0 10px 25px rgba(0, 40, 85, 0.06);
+            --shadow-lg: 0 20px 40px rgba(0, 40, 85, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-dark);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--brand-orange); }
+
+        /* --- SIDEBAR CORPORATIVO --- */
+        .sidebar { width: 270px; background: var(--white); border-right: 1px solid var(--border-light); padding: 30px 20px; position: fixed; height: 100vh; display: flex; flex-direction: column; z-index: 100; box-shadow: var(--shadow-sm); }
+        .sidebar-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 1px solid var(--border-light); }
+        .sidebar-logo img { width: 140px; height: auto; transition: 0.3s; }
+        .sidebar-logo img:hover { transform: scale(1.05); }
+
+        .nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin: 15px 0 10px 15px; font-weight: 700; }
+        .sidebar a { color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 10px; transition: all 0.3s ease; display: flex; align-items: center; gap: 15px; font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+        .sidebar a i { font-size: 18px; width: 20px; text-align: center; }
+        .sidebar a:hover, .sidebar a.active { background: var(--bg-main); color: var(--brand-blue); }
+        .sidebar a.btn-highlight { background: var(--brand-blue); color: var(--white); margin-top: 10px; box-shadow: 0 4px 12px rgba(0, 40, 85, 0.2); }
+        .sidebar a.btn-highlight:hover { background: var(--brand-blue-light); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 40, 85, 0.3); }
+
+        /* --- CONTENIDO PRINCIPAL --- */
+        .main-content { margin-left: 270px; flex: 1; padding: 40px 50px; display: flex; flex-direction: column; max-width: calc(100vw - 270px); }
+
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+        .header-title h1 { font-size: 28px; color: var(--brand-blue); font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+        .header-title p { color: var(--text-muted); font-size: 14px; }
+
+        .user-pill { background: var(--white); padding: 8px 25px; border-radius: 50px; display: flex; align-items: center; gap: 15px; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); transition: 0.3s; }
+        .user-pill:hover { box-shadow: var(--shadow-md); border-color: #CBD5E1; }
+
+        /* --- GRID --- */
+        .content-grid { display: grid; grid-template-columns: 1fr 380px; gap: 30px; align-items: start; }
+
+        /* --- FORMULARIO --- */
+        .form-card { background: var(--white); border-radius: 20px; padding: 40px; box-shadow: var(--shadow-md); border: 1px solid var(--border-light); }
+
+        .section-title { font-size: 15px; font-weight: 800; color: var(--brand-blue); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 25px; padding-bottom: 12px; border-bottom: 2px solid var(--bg-main); grid-column: span 2; display: flex; align-items: center; justify-content: space-between; }
+        .section-title .title-left { display: flex; align-items: center; gap: 10px; }
+        .section-title .title-left i { color: var(--brand-orange); }
+
+        /* Badge visual de estado */
+        .status-badge { background: #FEF3C7; color: #92400E; padding: 5px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #FDE68A; text-transform: none; }
+
+        form { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 25px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; position: relative; }
+        .full-width { grid-column: span 2; }
+        label { font-size: 13px; font-weight: 700; color: var(--text-dark); display: flex; justify-content: space-between; }
+
+        .input-with-icon { position: relative; }
+        .input-with-icon i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 15px; transition: 0.3s; }
+        .input-with-icon span.suffix { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #94A3B8; font-size: 14px; font-weight: 600; pointer-events: none; }
+
+        input, select { width: 100%; padding: 14px 15px 14px 45px; border: 2px solid var(--border-light); border-radius: 12px; font-size: 14px; font-family: inherit; color: var(--text-dark); transition: all 0.3s ease; outline: none; background: var(--bg-main); appearance: none; }
+        .no-icon-input { padding-left: 15px !important; }
+
+        select { background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748B%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 10px auto; }
+
+        input:focus, select:focus { background: var(--white); border-color: var(--brand-blue); box-shadow: 0 0 0 4px rgba(0, 40, 85, 0.1); }
+        input:focus + i, select:focus + i { color: var(--brand-blue); }
+
+        .dimensions-group { display: flex; gap: 15px; }
+
+        /* --- CHIPS INTELIGENTES --- */
+        .smart-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .chip { background: var(--bg-main); border: 1px solid var(--border-light); color: var(--text-muted); padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px; user-select: none; }
+        .chip:hover { background: var(--ai-bg); color: var(--brand-blue); border-color: var(--accent-cyan); transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .chip:active { transform: translateY(0); }
+        .chip i { font-size: 11px; color: var(--brand-orange); }
+
+        .error-msg { background: var(--danger-bg); color: var(--danger-text); padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; font-size: 14px; font-weight: 600; border-left: 5px solid #DC2626; grid-column: span 2; display: flex; align-items: center; gap: 10px; }
+
+        .legal-badge { grid-column: span 2; background: #F0FDF4; border: 1px solid #BBF7D0; padding: 12px 15px; border-radius: 10px; display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+        .legal-badge i { color: #166534; font-size: 20px; }
+        .legal-badge p { font-size: 12px; color: #166534; line-height: 1.4; margin: 0; font-weight: 500; }
+
+        /* Botones Acción */
+        .actions-bar { grid-column: span 2; display: flex; justify-content: flex-end; gap: 15px; margin-top: 15px; padding-top: 25px; border-top: 2px solid var(--bg-main); }
+        .btn { padding: 15px 30px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 15px; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+        .btn-submit { background: var(--brand-orange); color: white; box-shadow: 0 4px 15px rgba(255, 102, 0, 0.2); }
+        .btn-submit:hover { background: var(--brand-orange-hover); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(255, 102, 0, 0.3); }
+        .btn-cancel { background: var(--white); color: var(--text-muted); border: 2px solid var(--border-light); }
+        .btn-cancel:hover { background: var(--bg-main); color: var(--text-dark); border-color: #CBD5E1; }
+
+        /* --- PANEL LATERAL COTIZADOR --- */
+        .summary-card { background: linear-gradient(180deg, var(--brand-blue) 0%, var(--brand-blue-light) 100%); border-radius: 20px; padding: 35px 30px; color: white; position: sticky; top: 40px; box-shadow: var(--shadow-lg); }
+        .summary-title { font-size: 18px; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; color: var(--white); }
+        .summary-title i { color: var(--accent-cyan); }
+
+        .route-visual { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 20px; margin-bottom: 25px; position: relative; }
+        .route-point { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; position: relative; z-index: 2; }
+        .route-point:last-child { margin-bottom: 0; }
+        .point-icon { width: 30px; height: 30px; background: var(--white); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--brand-blue); font-size: 12px; font-weight: 800; }
+        .point-icon.dest { background: var(--brand-orange); color: white; }
+        .point-text { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9); }
+        .point-text span { display: block; font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .route-line { position: absolute; left: 34px; top: 35px; bottom: 35px; width: 2px; background: dashed 2px rgba(255,255,255,0.3); z-index: 1; }
+
+        .summary-details { margin-bottom: 30px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 14px; }
+        .detail-row:last-child { border-bottom: none; }
+        .detail-label { color: rgba(255,255,255,0.6); }
+        .detail-value { font-weight: 700; text-align: right; max-width: 150px; }
+
+        .price-box { background: var(--white); border-radius: 15px; padding: 25px; text-align: center; color: var(--brand-blue); position: relative; overflow: hidden; }
+        .price-box::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 5px; background: var(--brand-orange); }
+        .price-label { font-size: 12px; text-transform: uppercase; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 5px; }
+        .price-amount { font-size: 36px; font-weight: 800; color: var(--brand-blue); letter-spacing: -1px; }
+        .ai-tag { position: absolute; top: 15px; right: 15px; background: var(--ai-bg); color: var(--ai-text); padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+
+        @media (max-width: 1200px) { .content-grid { grid-template-columns: 1fr; } .summary-card { position: relative; top: 0; } }
+        @media (max-width: 1024px) { .sidebar { width: 80px; padding: 20px 10px; } .sidebar span, .nav-label, .sidebar-logo img { display: none; } .sidebar-logo { border: none; margin-bottom: 20px; } .sidebar-logo::after { content: '\f4df'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 24px; color: var(--brand-blue); } .main-content { margin-left: 80px; max-width: calc(100vw - 80px); padding: 30px 20px; } .user-pill span { display: none; } }
+        @media (max-width: 768px) { form { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } .legal-badge, .actions-bar { grid-column: span 1; } }
+
+        /* Modal Mapa */
+        #mapModal { display: none; position: fixed; z-index: 3000; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
+        .map-container { background: white; width: 90%; max-width: 800px; height: 600px; border-radius: 20px; padding: 20px; position: relative; }
+        #map { width: 100%; height: 500px; border-radius: 12px; margin-top: 10px; }
+        .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .btn-map-select { background: var(--brand-blue); color: white; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .map-footer { margin-top: 15px; font-size: 12px; color: var(--text-muted); }
+
+        /* Explorador de Rutas Viales OSRM */
+        .route-explorer-panel { grid-column: span 2; background: #F8FAFC; border: 1.5px solid var(--border-light); border-radius: 16px; padding: 18px 20px; margin-top: 6px; }
+        .route-explorer-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .btn-search-routes { background: var(--brand-blue); color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; font-family: inherit; box-shadow: 0 4px 10px rgba(0, 40, 85, 0.15); }
+        .btn-search-routes:hover:not(:disabled) { background: var(--brand-blue-light); transform: translateY(-1px); }
+        .btn-search-routes:disabled { opacity: 0.6; cursor: wait; }
+        .route-search-status { font-size: 12px; margin-top: 10px; font-weight: 600; color: var(--text-muted); display: none; }
+        #routePreviewContainer { display: none; margin-top: 14px; }
+        #routePreviewMap { width: 100%; height: 240px; border-radius: 12px; border: 1px solid var(--border-light); z-index: 1; margin-bottom: 12px; }
+        .route-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+        .route-card { background: white; border: 2px solid var(--border-light); border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: 0.2s; position: relative; }
+        .route-card:hover { border-color: var(--accent-cyan); transform: translateY(-1px); }
+        .route-card.selected { border-color: var(--brand-orange); background: #FFF7ED; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.12); }
+        .route-card-tag { display: inline-block; font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 3px 8px; border-radius: 50px; margin-bottom: 6px; }
+        .route-tag-fast { background: #DCFCE7; color: #166534; }
+        .route-tag-alt { background: #E0F2FE; color: #0369A1; }
+        .route-card-metrics { font-size: 15px; font-weight: 800; color: var(--brand-blue); }
+        .route-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
+        @media (max-width: 768px) { .route-explorer-panel { grid-column: span 1; } }
+    </style>
+</head>
+<body>
+
+    <div th:replace="~{fragments/sai-sidebar :: sidebar('crear')}"></div>
+
+    <main class="main-content">
+        <div class="top-header">
+            <div class="header-title">
+                <h1>Despachar Nueva Guía</h1>
+                <p>Digitalice los datos con ayuda del autocompletado inteligente.</p>
+            </div>
+            
+            <div class="user-pill">
+                <div style="text-align: right">
+                    <div style="font-weight: 700; font-size: 14px; color: var(--brand-blue);" th:text="${#authentication.name}">Operador</div>
+                    <a th:href="@{/usuario/perfil}" style="font-size: 11px; color: var(--text-muted); text-decoration: none; font-weight: 600;">VER PERFIL</a>
+                </div>
+                <i class="fa-solid fa-circle-user" style="font-size: 36px; color: var(--brand-blue-light);"></i>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="form-card">
+                <div th:if="${error}" class="error-msg">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 20px;"></i> 
+                    <span th:text="${error}"></span>
+                </div>
+
+                <form th:action="@{/guias/crear}" method="post" th:object="${guia}">
+                    <input type="hidden" th:field="*{latOrigen}" id="latOrigen">
+                    <input type="hidden" th:field="*{lonOrigen}" id="lonOrigen">
+                    <input type="hidden" th:field="*{latDestino}" id="latDestino">
+                    <input type="hidden" th:field="*{lonDestino}" id="lonDestino">
+                    <input type="hidden" th:field="*{distanciaKm}" id="distanciaKm">
+                    <input type="hidden" th:field="*{tiempoEstimadoMinutos}" id="tiempoEstimadoMinutos">
+                    <!-- Bloque de Errores de Validación -->
+                    <div th:if="${#fields.hasErrors('*')}" class="error-msg" style="background: #FFFBEB; color: #92400E; border-left-color: #F59E0B; margin-bottom: 20px;">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 800; margin-bottom: 5px;">Por favor corrige los siguientes campos:</div>
+                            <ul style="margin: 0; padding-left: 20px; font-size: 13px;">
+                                <li th:each="err : ${#fields.errors('*')}" th:text="${err}"></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <h3 class="section-title">
+                        <div class="title-left"><i class="fa-solid fa-address-book"></i> Datos de Contacto</div>
+                        <div class="status-badge"><i class="fa-solid fa-clock"></i> Inicia como PENDIENTE</div>
+                    </h3>
+
+                    <!-- NUEVO: Selector de Direccionario -->
+                    <div class="form-group full-width" th:if="${not #lists.isEmpty(direccionesGuardadas)}">
+                        <label style="color: var(--brand-orange); font-size: 11px;">🚀 DESPACHO RÁPIDO: SELECCIONAR DESDE MI DIRECCIONARIO</label>
+                        <div class="input-with-icon">
+                            <select id="direccionarioSelector" onchange="usarDireccionGuardada()">
+                                <option value="" selected>--- Selecciona una ubicación guardada ---</option>
+                                <option th:each="dir : ${direccionesGuardadas}" 
+                                        th:value="${dir.id}" 
+                                        th:data-nombre="${dir.nombreContacto}"
+                                        th:data-dir="${dir.direccion}"
+                                        th:data-ciudad="${dir.ciudad}"
+                                        th:data-dept="${dir.departamento}"
+                                        th:data-tel="${dir.telefono}"
+                                        th:text="${dir.alias} + ' (' + ${dir.nombreContacto} + ')'"></option>
+                            </select>
+                            <i class="fa-solid fa-star" style="color: var(--brand-orange);"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Nombre del Remitente</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{remitente}" required 
+                                   pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" 
+                                   title="El nombre solo puede contener letras y espacios"
+                                   placeholder="Ej: Carlos Empresa SAS" autocomplete="off">
+                            <i class="fa-solid fa-user-tie"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nombre del Destinatario</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{destinatario}" required 
+                                   pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" 
+                                   title="El nombre solo puede contener letras y espacios"
+                                   placeholder="Ej: Juan Cliente Final" autocomplete="off">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cédula / NIT Remitente</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{cedulaRemitente}" required placeholder="Número de documento">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cédula / NIT Destinatario</label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{cedulaDestinatario}" required placeholder="Número de documento">
+                            <i class="fa-solid fa-id-card"></i>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" style="margin-top: 15px;"><i class="fa-solid fa-route"></i> Ruta Logística</h3>
+                    <div class="form-group">
+                        <label>Departamento de Origen</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{departamentoOrigen}" id="departamentoOrigen" required>
+                                <option value="" disabled selected>Seleccione Departamento...</option>
+                                <option value="Amazonas">Amazonas</option><option value="Antioquia">Antioquia</option><option value="Arauca">Arauca</option><option value="Atlántico">Atlántico</option><option value="Bolívar">Bolívar</option><option value="Boyacá">Boyacá</option><option value="Caldas">Caldas</option><option value="Caquetá">Caquetá</option><option value="Casanare">Casanare</option><option value="Cauca">Cauca</option><option value="Cesar">Cesar</option><option value="Chocó">Chocó</option><option value="Córdoba">Córdoba</option><option value="Cundinamarca">Cundinamarca</option><option value="Guainía">Guainía</option><option value="Guaviare">Guaviare</option><option value="Huila">Huila</option><option value="La Guajira">La Guajira</option><option value="Magdalena">Magdalena</option><option value="Meta">Meta</option><option value="Nariño">Nariño</option><option value="Norte de Santander">Norte de Santander</option><option value="Putumayo">Putumayo</option><option value="Quindío">Quindío</option><option value="Risaralda">Risaralda</option><option value="San Andrés y Providencia">San Andrés y Providencia</option><option value="Santander">Santander</option><option value="Sucre">Sucre</option><option value="Tolima">Tolima</option><option value="Valle del Cauca">Valle del Cauca</option><option value="Vaupés">Vaupés</option><option value="Vichada">Vichada</option>
+                            </select>
+                            <i class="fa-solid fa-map"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ciudad de Origen</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{ciudadOrigen}" id="ciudadOrigen" required>
+                                <option value="" disabled selected>Seleccione Ciudad...</option>
+                                <option value="Bogotá D.C.">Bogotá D.C.</option><option value="Medellín">Medellín</option><option value="Cali">Cali</option><option value="Barranquilla">Barranquilla</option><option value="Cartagena de Indias">Cartagena de Indias</option><option value="Cúcuta">Cúcuta</option><option value="Bucaramanga">Bucaramanga</option><option value="Pereira">Pereira</option><option value="Santa Marta">Santa Marta</option><option value="Ibagué">Ibagué</option><option value="Manizales">Manizales</option><option value="Villavicencio">Villavicencio</option><option value="Neiva">Neiva</option><option value="Pasto">Pasto</option><option value="Armenia">Armenia</option><option value="Valledupar">Valledupar</option><option value="Montería">Montería</option><option value="Sincelejo">Sincelejo</option><option value="Popayán">Popayán</option><option value="Tunja">Tunja</option>
+                            </select>
+                            <i class="fa-solid fa-plane-departure"></i>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillLocation('Origen', 'Cundinamarca', 'Bogotá D.C.')"><i class="fa-solid fa-location-crosshairs"></i> Bogotá</span>
+                            <span class="chip" onclick="fillLocation('Origen', 'Antioquia', 'Medellín')">Medellín</span>
+                            <span class="chip" onclick="fillLocation('Origen', 'Valle del Cauca', 'Cali')">Cali</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Departamento de Destino</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{departamentoDestino}" id="departamentoDestino" required>
+                                <option value="" disabled selected>Seleccione Departamento...</option>
+                                <option value="Amazonas">Amazonas</option><option value="Antioquia">Antioquia</option><option value="Arauca">Arauca</option><option value="Atlántico">Atlántico</option><option value="Bolívar">Bolívar</option><option value="Boyacá">Boyacá</option><option value="Caldas">Caldas</option><option value="Caquetá">Caquetá</option><option value="Casanare">Casanare</option><option value="Cauca">Cauca</option><option value="Cesar">Cesar</option><option value="Chocó">Chocó</option><option value="Córdoba">Córdoba</option><option value="Cundinamarca">Cundinamarca</option><option value="Guainía">Guainía</option><option value="Guaviare">Guaviare</option><option value="Huila">Huila</option><option value="La Guajira">La Guajira</option><option value="Magdalena">Magdalena</option><option value="Meta">Meta</option><option value="Nariño">Nariño</option><option value="Norte de Santander">Norte de Santander</option><option value="Putumayo">Putumayo</option><option value="Quindío">Quindío</option><option value="Risaralda">Risaralda</option><option value="San Andrés y Providencia">San Andrés y Providencia</option><option value="Santander">Santander</option><option value="Sucre">Sucre</option><option value="Tolima">Tolima</option><option value="Valle del Cauca">Valle del Cauca</option><option value="Vaupés">Vaupés</option><option value="Vichada">Vichada</option>
+                            </select>
+                            <i class="fa-solid fa-map"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ciudad de Destino</label>
+                        <div class="input-with-icon">
+                            <select th:field="*{ciudadDestino}" id="ciudadDestino" required>
+                                <option value="" disabled selected>Seleccione Ciudad...</option>
+                                <option value="Bogotá D.C.">Bogotá D.C.</option><option value="Medellín">Medellín</option><option value="Cali">Cali</option><option value="Barranquilla">Barranquilla</option><option value="Cartagena de Indias">Cartagena de Indias</option><option value="Cúcuta">Cúcuta</option><option value="Bucaramanga">Bucaramanga</option><option value="Pereira">Pereira</option><option value="Santa Marta">Santa Marta</option><option value="Ibagué">Ibagué</option><option value="Manizales">Manizales</option><option value="Villavicencio">Villavicencio</option><option value="Neiva">Neiva</option><option value="Pasto">Pasto</option><option value="Armenia">Armenia</option><option value="Valledupar">Valledupar</option><option value="Montería">Montería</option><option value="Sincelejo">Sincelejo</option><option value="Popayán">Popayán</option><option value="Tunja">Tunja</option>
+                            </select>
+                            <i class="fa-solid fa-plane-arrival"></i>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillLocation('Destino', 'Cundinamarca', 'Bogotá D.C.')">Bogotá</span>
+                            <span class="chip" onclick="fillLocation('Destino', 'Antioquia', 'Medellín')">Medellín</span>
+                            <span class="chip" onclick="fillLocation('Destino', 'Valle del Cauca', 'Cali')">Cali</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>
+                            Dirección Exacta de Recogida
+                            <button type="button" class="chip" onclick="abrirMapa('direccionEnvio')" style="margin: 0; background: var(--brand-blue); color: white; border: none;">
+                                <i class="fa-solid fa-map-location-dot" style="color: white;"></i> Seleccionar en Mapa
+                            </button>
+                        </label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{direccionEnvio}" id="direccionEnvio" required placeholder="Nomenclatura completa, bodega o local">
+                            <i class="fa-solid fa-map-pin"></i>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label>
+                            Dirección Exacta de Entrega
+                            <button type="button" class="chip" onclick="abrirMapa('direccionRecibo')" style="margin: 0; background: var(--brand-blue); color: white; border: none;">
+                                <i class="fa-solid fa-map-location-dot" style="color: white;"></i> Seleccionar en Mapa
+                            </button>
+                        </label>
+                        <div class="input-with-icon">
+                            <input type="text" th:field="*{direccionRecibo}" id="direccionRecibo" required placeholder="Nomenclatura completa de destino">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Ruteo Vial con OSRM (Rutas Más Rápida y Alternativas) -->
+                    <div class="route-explorer-panel">
+                        <div class="route-explorer-header">
+                            <div>
+                                <div style="font-size: 13px; font-weight: 800; color: var(--brand-blue); display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-diamond-turn-right" style="color: var(--brand-orange);"></i> Rutas Viales por Carretera (OSRM)
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                                    Calcula rutas reales por carretera (principal y alternativas) para precisar distancia, tiempo y tarifa.
+                                </div>
+                            </div>
+                            <button type="button" id="btnBuscarRutas" class="btn-search-routes" onclick="buscarRutasOSRM()">
+                                <i class="fa-solid fa-route"></i> Buscar rutas
+                            </button>
+                        </div>
+                        <div id="routeSearchStatus" class="route-search-status"></div>
+                        <div id="routePreviewContainer">
+                            <div id="routePreviewMap"></div>
+                            <div id="routeOptionsList" class="route-cards"></div>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" style="margin-top: 15px;"><i class="fa-solid fa-boxes-packing"></i> Detalles de la Carga</h3>
+
+                    <div class="form-group full-width">
+                        <label>
+                            Tipo de Empaque
+                            <span id="ai-suggestion-badge" style="display: none; background: var(--ai-bg); color: var(--ai-text); padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: 700; border: 1px solid rgba(37, 99, 235, 0.2); box-shadow: var(--ai-glow); animation: pulse-ai 2s infinite;">
+                                <i class="fa-solid fa-microchip"></i> Sugerencia SAI: <span id="sugerencia-texto">...</span>
+                            </span>
+                        </label>
+                        <div class="input-with-icon">
+                            <select th:field="*{tipoCarga}" id="tipoCarga" required>
+                                <option value="" disabled selected>Seleccione la clasificación oficial de la carga...</option>
+                                <option value="Sobre de Documentos">Sobre de Documentos</option>
+                                <option value="Paquete Pequeño (Hasta 5kg)">Paquete Pequeño (Hasta 5kg)</option>
+                                <option value="Caja Estándar">Caja Estándar</option>
+                                <option value="Caja Grande">Caja Grande</option>
+                                <option value="Carga Frágil">Carga Frágil</option>
+                                <option value="Paletizado">Paletizado Industriial</option>
+                            </select>
+                            <i class="fa-solid fa-box-open"></i>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillTypeAndDims('Sobre de Documentos', 1, 30, 20)"><i class="fa-solid fa-envelope"></i> Sobre Doc.</span>
+                            <span class="chip" onclick="fillTypeAndDims('Paquete Pequeño (Hasta 5kg)', 5, 30, 30)"><i class="fa-solid fa-box"></i> Caja Pequeña</span>
+                            <span class="chip" onclick="fillTypeAndDims('Caja Estándar', 15, 50, 50)"><i class="fa-solid fa-box"></i> Caja Mediana</span>
+                            <span class="chip" onclick="fillTypeAndDims('Caja Grande', 30, 80, 80)"><i class="fa-solid fa-boxes-stacked"></i> Caja Grande</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Peso Físico</label>
+                        <div class="input-with-icon">
+                            <input type="number" step="0.01" th:field="*{pesoKg}" id="pesoKg" required placeholder="0.00">
+                            <i class="fa-solid fa-weight-hanging"></i>
+                            <span class="suffix">KG</span>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillInput('pesoKg', 1)">1 KG</span>
+                            <span class="chip" onclick="fillInput('pesoKg', 5)">5 KG</span>
+                            <span class="chip" onclick="fillInput('pesoKg', 10)">10 KG</span>
+                            <span class="chip" onclick="fillInput('pesoKg', 20)">20 KG</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Dimensiones (Ancho x Alto)</label>
+                        <div class="dimensions-group">
+                            <div class="input-with-icon" style="flex:1;">
+                                <input type="number" step="0.1" th:field="*{anchoCm}" id="anchoCm" class="no-icon-input" placeholder="Ancho" required>
+                                <span class="suffix">CM</span>
+                            </div>
+                            <div class="input-with-icon" style="flex:1;">
+                                <input type="number" step="0.1" th:field="*{alturaCm}" id="alturaCm" class="no-icon-input" placeholder="Alto" required>
+                                <span class="suffix">CM</span>
+                            </div>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillDims(20, 20)">20x20</span>
+                            <span class="chip" onclick="fillDims(40, 40)">40x40</span>
+                            <span class="chip" onclick="fillDims(60, 60)">60x60</span>
+                            <span class="chip" onclick="fillDims(100, 100)">100x100</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Valor Declarado (Seguro)</label>
+                        <div class="input-with-icon">
+                            <input type="number" step="0.01" th:field="*{valorDeclarado}" id="valorDeclarado" required placeholder="0.00">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                            <span class="suffix">COP</span>
+                        </div>
+                        <div class="smart-chips">
+                            <span class="chip" onclick="fillInput('valorDeclarado', 50000)">$50.000</span>
+                            <span class="chip" onclick="fillInput('valorDeclarado', 100000)">$100.000</span>
+                            <span class="chip" onclick="fillInput('valorDeclarado', 500000)">$500.000</span>
+                            <span class="chip" onclick="fillInput('valorDeclarado', 1000000)">$1'000.000</span>
+                        </div>
+                    </div>
+
+                    <div class="legal-badge">
+                        <i class="fa-solid fa-shield-check"></i>
+                        <p><strong>Operación Segura:</strong> Los datos personales ingresados están protegidos bajo la Ley 1581 de Habeas Data y cifrados en la base de datos central.</p>
+                    </div>
+
+                    <div class="actions-bar">
+                        <a th:href="@{/guias/mis-guias}" class="btn btn-cancel">Cancelar Operación</a>
+                        <button type="submit" class="btn btn-submit" id="btnGenerar">
+                            <i class="fa-solid fa-file-signature"></i> PROCESAR GUÍA
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="summary-card">
+                <div class="summary-title">
+                    <i class="fa-solid fa-robot"></i> Cotizador Predictivo
+                </div>
+
+                <div class="route-visual">
+                    <div class="route-line"></div>
+                    <div class="route-point">
+                        <div class="point-icon"><i class="fa-solid fa-location-dot"></i></div>
+                        <div class="point-text">
+                            <span>Origen</span>
+                            <div id="uiOrigen">Pendiente...</div>
+                        </div>
+                    </div>
+                    <div class="route-point">
+                        <div class="point-icon dest"><i class="fa-solid fa-flag-checkered"></i></div>
+                        <div class="point-text">
+                            <span>Destino</span>
+                            <div id="uiDestino">Pendiente...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Empaque:</span>
+                        <span class="detail-value" id="uiTipo" style="font-size: 12px;">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Peso Liquidado:</span>
+                        <span class="detail-value" id="uiPeso">0 KG</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Distancia Vial:</span>
+                        <span class="detail-value" id="uiDistanciaVial">Sin calcular</span>
+                    </div>
+                    <div class="detail-row" style="color: var(--accent-cyan);">
+                        <span class="detail-label">Est. Entrega:</span>
+                        <span class="detail-value" id="uiTiempo"><i class="fa-solid fa-clock"></i> Calculando...</span>
+                    </div>
+                </div>
+
+                <div class="price-box">
+                    <div class="ai-tag"><i class="fa-solid fa-microchip"></i> IA Activa</div>
+                    <div class="price-label">Tarifa Estimada</div>
+                    <div class="price-amount" id="uiPrecio">$0</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <datalist id="ciudades">
+        <option value="Bogotá"><option value="Medellín"><option value="Cali"><option value="Barranquilla"><option value="Cartagena"><option value="Bucaramanga"><option value="Pereira">
+    </datalist>
+
+    <script th:inline="javascript">
+        const TARIFA_POR_KM_RAW = /*[[${tarifaPorKm}]]*/ 25;
+    </script>
+    <script th:inline="none">
+        const TARIFA_POR_KM = Number.isFinite(Number(TARIFA_POR_KM_RAW)) ? Number(TARIFA_POR_KM_RAW) : 25;
+
+        const CIUDADES_CENTRO = {
+            'bogota d.c.': [4.7110, -74.0721],
+            'bogota': [4.7110, -74.0721],
+            'medellin': [6.2442, -75.5812],
+            'cali': [3.4516, -76.5320],
+            'barranquilla': [10.9685, -74.7813],
+            'cartagena de indias': [10.3910, -75.4794],
+            'cartagena': [10.3910, -75.4794],
+            'cucuta': [7.8891, -72.4967],
+            'bucaramanga': [7.1193, -73.1227],
+            'pereira': [4.8087, -75.6906],
+            'santa marta': [11.2404, -74.2110],
+            'ibague': [4.4389, -75.2322],
+            'manizales': [5.0703, -75.5138],
+            'villavicencio': [4.1420, -73.6266],
+            'neiva': [2.9273, -75.2819],
+            'pasto': [1.2136, -77.2811],
+            'armenia': [4.5339, -75.6811],
+            'valledupar': [10.4631, -73.2532],
+            'monteria': [8.7479, -75.8814],
+            'sincelejo': [9.3047, -75.3978],
+            'popayan': [2.4448, -76.6147],
+            'tunja': [5.5353, -73.3678],
+            'leticia': [-4.2153, -69.9406],
+            'quibdo': [5.6947, -76.6611],
+            'puerto carreno': [6.1890, -67.4859],
+            'mitu': [1.2537, -70.2339],
+            'inirida': [3.8653, -67.9239]
+        };
+        const ZONAS_ESPECIALES = ['leticia', 'quibdo', 'puerto carreno', 'mitu', 'inirida'];
+
+        let actualizandoDesdeMapa = false;
+        let lastClickedLatLng = null;
+        let routePreviewMap = null;
+        let routeLayerGroup = null;
+        let routePolylines = [];
+        let rutasEncontradas = [];
+        let selectedRouteIndex = -1;
+
+        function normalizarTexto(txt) {
+            return (txt || '').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function escapeHtml(text) {
+            return String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function obtenerCentroCiudad(ciudad) {
+            const key = normalizarTexto(ciudad);
+            return CIUDADES_CENTRO[key] || null;
+        }
+
+        function limpiarRutaSeleccionada() {
+            const distEl = document.getElementById('distanciaKm');
+            const tiempoEl = document.getElementById('tiempoEstimadoMinutos');
+            if (distEl) distEl.value = '';
+            if (tiempoEl) tiempoEl.value = '';
+            rutasEncontradas = [];
+            selectedRouteIndex = -1;
+            routePolylines = [];
+            if (routeLayerGroup) routeLayerGroup.clearLayers();
+            const container = document.getElementById('routePreviewContainer');
+            if (container) container.style.display = 'none';
+            const list = document.getElementById('routeOptionsList');
+            if (list) list.innerHTML = '';
+            const status = document.getElementById('routeSearchStatus');
+            if (status) {
+                status.style.display = 'none';
+                status.innerText = '';
+            }
+            if (typeof updateLiveSummary === 'function') updateLiveSummary();
+        }
+
+        function limpiarCoordenadas(tipo) {
+            const latEl = document.getElementById('lat' + tipo);
+            const lonEl = document.getElementById('lon' + tipo);
+            if (latEl) latEl.value = '';
+            if (lonEl) lonEl.value = '';
+            limpiarRutaSeleccionada();
+        }
+
+        // --- 0. FUNCION DIRECCIONARIO --- //
+        function usarDireccionGuardada() {
+            const select = document.getElementById('direccionarioSelector');
+            const option = select.options[select.selectedIndex];
+            
+            if (option.value !== "") {
+                fillInput('destinatario', option.getAttribute('data-nombre'));
+                fillInput('direccionRecibo', option.getAttribute('data-dir'));
+                fillInput('departamentoDestino', option.getAttribute('data-dept'));
+                fillInput('ciudadDestino', option.getAttribute('data-ciudad'));
+                // Si tuviéramos campo de teléfono en Guia, lo llenaríamos aquí también
+                
+                // Efecto visual de carga
+                select.style.borderColor = "var(--success)";
+                setTimeout(() => select.style.borderColor = "var(--border-light)", 1000);
+            }
+        }
+
+        // --- 1. FUNCIONES DE AUTOCOMPLETADO (SMART CHIPS) --- //
+        function fillInput(inputId, value) {
+            const input = document.getElementById(inputId);
+            if(input) {
+                input.value = value;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                if(input.tagName === 'SELECT') {
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        }
+
+        function fillLocation(type, dept, city) {
+            fillInput('departamento' + type, dept);
+            fillInput('ciudad' + type, city);
+        }
+
+        // Llenar Ancho y Alto a la vez
+        function fillDims(ancho, alto) {
+            fillInput('anchoCm', ancho);
+            fillInput('alturaCm', alto);
+        }
+
+        // Súper Botón: Llena Tipo, Peso, Ancho y Alto con 1 clic
+        function fillTypeAndDims(tipo, peso, ancho, alto) {
+            fillInput('tipoCarga', tipo);
+            fillInput('pesoKg', peso);
+            fillInput('anchoCm', ancho);
+            fillInput('alturaCm', alto);
+        }
+
+        // --- 2. LÓGICA DEL COTIZADOR IA (PANEL DERECHO) --- //
+        
+        // Referencias a los inputs (Usando los IDs reales generados por Thymeleaf)
+        const inputs = {
+            origen: document.getElementById('ciudadOrigen'),
+            destino: document.getElementById('ciudadDestino'),
+            tipo: document.getElementById('tipoCarga'),
+            peso: document.getElementById('pesoKg'),
+            valor: document.getElementById('valorDeclarado'),
+            ancho: document.getElementById('anchoCm'),
+            alto: document.getElementById('alturaCm')
+        };
+
+        // Referencias a los textos del panel azul
+        const uiElements = {
+            origen: document.getElementById('uiOrigen'),
+            destino: document.getElementById('uiDestino'),
+            tipo: document.getElementById('uiTipo'),
+            peso: document.getElementById('uiPeso'),
+            distancia: document.getElementById('uiDistanciaVial'),
+            tiempo: document.getElementById('uiTiempo'),
+            precio: document.getElementById('uiPrecio')
+        };
+
+        const formatCurrency = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+        function formatearDuracion(minutos) {
+            const minTot = Math.max(1, Math.round(minutos));
+            if (minTot < 60) return `${minTot} min`;
+            const horas = Math.floor(minTot / 60);
+            const mins = minTot % 60;
+            return mins > 0 ? `${horas} h ${mins} min` : `${horas} h`;
+        }
+
+        function esZonaEspecial(ciudad) {
+            return ZONAS_ESPECIALES.includes(normalizarTexto(ciudad));
+        }
+
+        function updateLiveSummary() {
+            // Actualizar Textos
+            const dOrigen = document.getElementById('departamentoOrigen').value || '';
+            const dDestino = document.getElementById('departamentoDestino').value || '';
+
+            uiElements.origen.innerText = inputs.origen.value ? (inputs.origen.value + (dOrigen ? ', ' + dOrigen : '')) : 'Pendiente...';
+            uiElements.destino.innerText = inputs.destino.value ? (inputs.destino.value + (dDestino ? ', ' + dDestino : '')) : 'Pendiente...';
+
+            let tipoTexto = inputs.tipo.value || '-';
+            if (tipoTexto.length > 22) tipoTexto = tipoTexto.substring(0, 19) + '...';
+            uiElements.tipo.innerText = tipoTexto;
+
+            // Variables Numéricas Seguras
+            const pesoFisico = parseFloat(inputs.peso.value) || 0;
+            const valor = parseFloat(inputs.valor.value) || 0;
+            const ancho = parseFloat(inputs.ancho.value) || 0;
+            const alto = parseFloat(inputs.alto.value) || 0;
+
+            // Cálculo de Peso Volumétrico (Fórmula estándar: ancho x alto x largo / 4000)
+            const pesoVolumetrico = (ancho * alto * 20) / 4000;
+            const pesoCobrar = Math.max(pesoFisico, pesoVolumetrico);
+
+            uiElements.peso.innerText = pesoCobrar > 0 ? `${pesoCobrar.toFixed(1)} KG` : '0 KG';
+
+            const distanciaKm = parseFloat(document.getElementById('distanciaKm')?.value);
+            const tiempoMin = parseInt(document.getElementById('tiempoEstimadoMinutos')?.value, 10);
+            const tieneDistanciaVial = Number.isFinite(distanciaKm) && distanciaKm > 0;
+
+            if (uiElements.distancia) {
+                uiElements.distancia.innerText = tieneDistanciaVial ? `${distanciaKm.toFixed(1)} km` : 'Sin calcular';
+            }
+
+            // Fórmula de Precios (alineada con PriceCalculatorService)
+            let precioBase = 0;
+            if (pesoCobrar > 0 || valor > 0) {
+                precioBase = 12500; // Base operativa
+                precioBase += (pesoCobrar * 3500); // Costo por Kilo
+                precioBase += (valor * 0.02); // Seguro obligatorio (2%)
+                if (esZonaEspecial(inputs.origen.value) || esZonaEspecial(inputs.destino.value)) {
+                    precioBase += 15000;
+                }
+                if (tieneDistanciaVial) {
+                    precioBase += (distanciaKm * TARIFA_POR_KM);
+                }
+            }
+
+            uiElements.precio.innerText = formatCurrency.format(precioBase);
+
+            // Tiempos Estimados (OSRM Vial si existe, heurística base en caso contrario)
+            if (Number.isFinite(tiempoMin) && tiempoMin > 0) {
+                uiElements.tiempo.innerHTML = `<i class="fa-solid fa-route"></i> ${escapeHtml(formatearDuracion(tiempoMin))} (Vial)`;
+            } else if (inputs.origen.value && inputs.destino.value) {
+                if (inputs.origen.value.trim().toLowerCase() === inputs.destino.value.trim().toLowerCase()) {
+                    uiElements.tiempo.innerHTML = '<i class="fa-solid fa-truck-fast"></i> Hoy (Local)';
+                } else {
+                    uiElements.tiempo.innerHTML = '<i class="fa-solid fa-clock"></i> 24 - 48 Horas';
+                }
+            } else {
+                uiElements.tiempo.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Esperando ruta...';
+            }
+        }
+
+        // Activar el cotizador en tiempo real
+        const allInputs = {...inputs, dO: document.getElementById('departamentoOrigen'), dD: document.getElementById('departamentoDestino')};
+        Object.values(allInputs).forEach(input => {
+            if (input) {
+                input.addEventListener('input', updateLiveSummary);
+                if (input.tagName === 'SELECT') input.addEventListener('change', updateLiveSummary);
+            }
+        });
+
+        // Invalidar coordenadas y ruta calculada si el usuario cambia origen/destino manualmente
+        ['departamentoOrigen', 'ciudadOrigen', 'direccionEnvio'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+            el.addEventListener(ev, () => {
+                if (!actualizandoDesdeMapa) limpiarCoordenadas('Origen');
+            });
+        });
+        ['departamentoDestino', 'ciudadDestino', 'direccionRecibo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+            el.addEventListener(ev, () => {
+                if (!actualizandoDesdeMapa) limpiarCoordenadas('Destino');
+            });
+        });
+
+        // --- 3. EFECTO DE CARGA AL GUARDAR --- //
+        const guideForm = document.querySelector('.form-card form');
+        if (guideForm) {
+            guideForm.addEventListener('submit', function(e) {
+                const btn = document.getElementById('btnGenerar');
+                if (!this.checkValidity()) {
+                    // Si el formulario no es válido, no hacer nada (dejar que el navegador muestre los errores)
+                    return;
+                }
+
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> PROCESANDO...';
+                btn.style.opacity = '0.9';
+                btn.style.pointerEvents = 'none';
+            });
+        }
+
+        // --- 4. LÓGICA DE MAPA INTERACTIVO --- //
+        let map;
+        let marker;
+        let activeInputId;
+        let currentGeocodedData = null;
+
+        function abrirMapa(targetId) {
+            activeInputId = targetId;
+            lastClickedLatLng = null;
+            currentGeocodedData = null;
+            document.getElementById('mapModal').style.display = 'flex';
+
+            if (!map) {
+                // Centrar en Colombia
+                map = L.map('map').setView([4.5709, -74.2973], 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                map.on('click', function(e) {
+                    const { lat, lng } = e.latlng;
+                    lastClickedLatLng = { lat, lng };
+                    currentGeocodedData = null;
+                    if (marker) map.removeLayer(marker);
+                    marker = L.marker([lat, lng]).addTo(map);
+
+                    // Geocoding reverso (Nominatim)
+                    document.getElementById('tempAddress').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Localizando coordenadas...';
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.display_name) {
+                                document.getElementById('tempAddress').innerText = data.display_name;
+                                currentGeocodedData = data.address;
+                            } else {
+                                document.getElementById('tempAddress').innerText = `Coordenadas (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+                            }
+                        }).catch(() => {
+                            document.getElementById('tempAddress').innerText = `Coordenadas (${lat.toFixed(5)}, ${lng.toFixed(5)})`;
+                        });
+                });
+            } else {
+                setTimeout(() => map.invalidateSize(), 100);
+            }
+            // Asegurar tamaño correcto siempre al abrir
+            setTimeout(() => map.invalidateSize(), 300);
+        }
+
+        function confirmarUbicacion() {
+            const address = document.getElementById('tempAddress').innerText;
+            if (address && address !== 'Haga clic en el mapa para marcar la ubicación...' && lastClickedLatLng) {
+                const suffix = activeInputId === 'direccionEnvio' ? 'Origen' : 'Destino';
+                actualizandoDesdeMapa = true;
+                try {
+                    const dirInput = document.getElementById(activeInputId);
+                    dirInput.value = address;
+                    dirInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    // Auto-poblar Departamento y Ciudad
+                    if (currentGeocodedData) {
+                        const deptMap = {
+                            "Bogotá": "Cundinamarca",
+                            "Distrito Capital de Bogotá": "Cundinamarca",
+                            "Bogotá, D.C.": "Cundinamarca",
+                            "Valle del Cauca": "Valle del Cauca",
+                            "Antioquia": "Antioquia",
+                            "Atlántico": "Atlántico"
+                        };
+
+                        const deptName = currentGeocodedData.state || currentGeocodedData.province || currentGeocodedData.region;
+                        const cityName = currentGeocodedData.city || currentGeocodedData.town || currentGeocodedData.village || currentGeocodedData.suburb || currentGeocodedData.county || currentGeocodedData.municipality;
+
+                        if (deptName) {
+                            const finalDept = deptMap[deptName] || deptName;
+                            const deptSelect = document.getElementById('departamento' + suffix);
+                            Array.from(deptSelect.options).forEach(opt => {
+                                if (opt.value.includes(finalDept) || finalDept.includes(opt.value)) {
+                                    deptSelect.value = opt.value;
+                                }
+                            });
+                            deptSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+
+                        if (cityName) {
+                            const citySelect = document.getElementById('ciudad' + suffix);
+                            let found = false;
+                            Array.from(citySelect.options).forEach(opt => {
+                                const val = normalizarTexto(opt.value);
+                                const search = normalizarTexto(cityName);
+                                if (val && search && (val.includes(search) || search.includes(val))) {
+                                    citySelect.value = opt.value;
+                                    found = true;
+                                }
+                            });
+                            if (!found && (cityName.toLowerCase().includes("bogota") || cityName.toLowerCase().includes("distrito capital"))) {
+                                citySelect.value = "Bogotá D.C.";
+                            }
+                            citySelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+
+                    document.getElementById('lat' + suffix).value = lastClickedLatLng.lat.toFixed(6);
+                    document.getElementById('lon' + suffix).value = lastClickedLatLng.lng.toFixed(6);
+                    limpiarRutaSeleccionada();
+                } finally {
+                    actualizandoDesdeMapa = false;
+                }
+
+                cerrarMapa();
+            } else {
+                alert("Por favor, seleccione un punto en el mapa.");
+            }
+        }
+
+        function cerrarMapa() {
+            document.getElementById('mapModal').style.display = 'none';
+            document.getElementById('tempAddress').innerText = 'Haga clic en el mapa para marcar la ubicación...';
+            if (marker) map.removeLayer(marker);
+            currentGeocodedData = null;
+            lastClickedLatLng = null;
+        }
+
+        // --- 4B. RUTEO VIAL CON OSRM (PRINCIPAL Y ALTERNATIVAS) --- //
+        function haversineKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function mostrarEstadoRuta(mensaje, esError = false) {
+            const statusEl = document.getElementById('routeSearchStatus');
+            if (!statusEl) return;
+            statusEl.style.display = 'block';
+            statusEl.style.color = esError ? '#DC2626' : 'var(--text-muted)';
+            statusEl.innerText = mensaje;
+        }
+
+        async function fetchConTimeout(url, timeoutMs = 8000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                return await fetch(url, { signal: controller.signal });
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function geocodificarNominatim(query) {
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=co&q=${encodeURIComponent(query)}`;
+                const res = await fetchConTimeout(url, 6000);
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                        return { lat, lon };
+                    }
+                }
+            } catch (_) {
+                // Fallback a centroide de ciudad si Nominatim no responde
+            }
+            return null;
+        }
+
+        async function resolverCoordenadasPunto(tipo) {
+            const latEl = document.getElementById('lat' + tipo);
+            const lonEl = document.getElementById('lon' + tipo);
+            const latExist = parseFloat(latEl?.value);
+            const lonExist = parseFloat(lonEl?.value);
+            if (Number.isFinite(latExist) && Number.isFinite(lonExist) && Math.abs(latExist) <= 90 && Math.abs(lonExist) <= 180) {
+                return { lat: latExist, lon: lonExist, fuente: 'mapa' };
+            }
+
+            const dept = document.getElementById('departamento' + tipo)?.value || '';
+            const ciudad = document.getElementById('ciudad' + tipo)?.value || '';
+            const dirId = tipo === 'Origen' ? 'direccionEnvio' : 'direccionRecibo';
+            const direccion = (document.getElementById(dirId)?.value || '').trim();
+
+            let coords = null;
+            if (direccion) {
+                coords = await geocodificarNominatim(`${direccion}, ${ciudad}, ${dept}, Colombia`);
+            }
+            if (!coords && ciudad) {
+                coords = await geocodificarNominatim(`${ciudad}, ${dept ? dept + ', ' : ''}Colombia`);
+            }
+            if (coords) {
+                if (latEl) latEl.value = coords.lat.toFixed(6);
+                if (lonEl) lonEl.value = coords.lon.toFixed(6);
+                return { ...coords, fuente: 'nominatim' };
+            }
+
+            const centro = obtenerCentroCiudad(ciudad);
+            if (centro) {
+                if (latEl) latEl.value = centro[0].toFixed(6);
+                if (lonEl) lonEl.value = centro[1].toFixed(6);
+                return { lat: centro[0], lon: centro[1], fuente: 'centroide' };
+            }
+            return null;
+        }
+
+        function inicializarMapaVistaPrevia() {
+            if (!routePreviewMap) {
+                routePreviewMap = L.map('routePreviewMap').setView([4.5709, -74.2973], 6);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(routePreviewMap);
+                routeLayerGroup = L.layerGroup().addTo(routePreviewMap);
+            }
+            setTimeout(() => routePreviewMap.invalidateSize(), 80);
+        }
+
+        function seleccionarRuta(idx) {
+            if (!Array.isArray(rutasEncontradas) || idx < 0 || idx >= rutasEncontradas.length) return;
+            selectedRouteIndex = idx;
+            const ruta = rutasEncontradas[idx];
+
+            document.getElementById('distanciaKm').value = ruta.distanciaKm.toFixed(1);
+            document.getElementById('tiempoEstimadoMinutos').value = ruta.duracionMin;
+
+            document.querySelectorAll('#routeOptionsList .route-card').forEach((card, i) => {
+                card.classList.toggle('selected', i === idx);
+            });
+
+            routePolylines.forEach((poly, i) => {
+                if (i === idx) {
+                    poly.setStyle({ color: '#FF6600', weight: 5, opacity: 0.95, dashArray: ruta.esFallback ? '8 8' : null });
+                    poly.bringToFront();
+                } else {
+                    poly.setStyle({ color: '#64748B', weight: 4, opacity: 0.55, dashArray: null });
+                }
+            });
+
+            updateLiveSummary();
+        }
+
+        function renderizarRutasEnMapaYTarjetas(coordO, coordD, ciudadO, ciudadD) {
+            const container = document.getElementById('routePreviewContainer');
+            const list = document.getElementById('routeOptionsList');
+            container.style.display = 'block';
+            list.innerHTML = '';
+
+            inicializarMapaVistaPrevia();
+            routeLayerGroup.clearLayers();
+            routePolylines = [];
+
+            const bounds = L.latLngBounds([ [coordO.lat, coordO.lon], [coordD.lat, coordD.lon] ]);
+
+            rutasEncontradas.forEach((ruta, idx) => {
+                const poly = L.polyline(ruta.coordinates, {
+                    color: idx === 0 ? '#FF6600' : '#64748B',
+                    weight: idx === 0 ? 5 : 4,
+                    opacity: idx === 0 ? 0.95 : 0.55,
+                    dashArray: ruta.esFallback ? '8 8' : null
+                }).addTo(routeLayerGroup);
+                poly.on('click', () => seleccionarRuta(idx));
+                routePolylines.push(poly);
+                bounds.extend(poly.getBounds());
+
+                const card = document.createElement('div');
+                card.className = 'route-card';
+                card.setAttribute('data-route-idx', String(idx));
+                card.addEventListener('click', () => seleccionarRuta(idx));
+
+                const tag = document.createElement('span');
+                tag.className = 'route-card-tag ' + (idx === 0 ? 'route-tag-fast' : 'route-tag-alt');
+                tag.innerText = ruta.esFallback
+                    ? 'Ruta estimada (Contingencia)'
+                    : (idx === 0 ? 'Ruta más rápida' : `Alternativa ${idx}`);
+
+                const metrics = document.createElement('div');
+                metrics.className = 'route-card-metrics';
+                metrics.innerText = `${ruta.distanciaKm.toFixed(1)} km · ${formatearDuracion(ruta.duracionMin)}`;
+
+                const recargoVial = Math.round(ruta.distanciaKm * TARIFA_POR_KM);
+                const sub = document.createElement('div');
+                sub.className = 'route-card-sub';
+                sub.innerText = `Recargo vial: +${formatCurrency.format(recargoVial)}`;
+
+                card.appendChild(tag);
+                card.appendChild(metrics);
+                card.appendChild(sub);
+                list.appendChild(card);
+            });
+
+            L.circleMarker([coordO.lat, coordO.lon], {
+                radius: 8, color: '#FFFFFF', weight: 2, fillColor: '#10B981', fillOpacity: 1
+            }).bindPopup(`<strong>Origen:</strong> ${escapeHtml(ciudadO)}`).addTo(routeLayerGroup);
+
+            L.circleMarker([coordD.lat, coordD.lon], {
+                radius: 8, color: '#FFFFFF', weight: 2, fillColor: '#FF6600', fillOpacity: 1
+            }).bindPopup(`<strong>Destino:</strong> ${escapeHtml(ciudadD)}`).addTo(routeLayerGroup);
+
+            routePreviewMap.fitBounds(bounds, { padding: [26, 26] });
+            setTimeout(() => routePreviewMap.invalidateSize(), 150);
+
+            seleccionarRuta(0);
+        }
+
+        async function buscarRutasOSRM() {
+            const ciudadO = document.getElementById('ciudadOrigen')?.value || '';
+            const ciudadD = document.getElementById('ciudadDestino')?.value || '';
+            if (!ciudadO || !ciudadD) {
+                mostrarEstadoRuta('Seleccione primero la ciudad de origen y la ciudad de destino.', true);
+                return;
+            }
+
+            const btn = document.getElementById('btnBuscarRutas');
+            const textoOriginal = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Buscando rutas...';
+            mostrarEstadoRuta('Geocodificando puntos de origen y destino...');
+
+            try {
+                const [coordO, coordD] = await Promise.all([
+                    resolverCoordenadasPunto('Origen'),
+                    resolverCoordenadasPunto('Destino')
+                ]);
+
+                if (!coordO || !coordD) {
+                    mostrarEstadoRuta('No fue posible ubicar el origen o destino. Marque los puntos en el mapa.', true);
+                    return;
+                }
+
+                mostrarEstadoRuta('Consultando ruta más rápida y alternativas en OSRM...');
+                let fallbackUsado = false;
+                let rutas = [];
+
+                try {
+                    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coordO.lon},${coordO.lat};${coordD.lon},${coordD.lat}?alternatives=true&overview=full&geometries=geojson`;
+                    const res = await fetchConTimeout(osrmUrl, 10000);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.code === 'Ok' && Array.isArray(data.routes) && data.routes.length > 0) {
+                            rutas = data.routes.slice(0, 3).map((r, idx) => ({
+                                index: idx,
+                                distanciaKm: Math.max(0.5, Number((r.distance / 1000).toFixed(1))),
+                                duracionMin: Math.max(1, Math.round(r.duration / 60)),
+                                coordinates: (r.geometry && Array.isArray(r.geometry.coordinates))
+                                    ? r.geometry.coordinates.map(c => [c[1], c[0]])
+                                    : [ [coordO.lat, coordO.lon], [coordD.lat, coordD.lon] ],
+                                esFallback: false
+                            }));
+                        }
+                    }
+                } catch (_) {
+                    // OSRM no accesible; usar fallback geodésico
+                }
+
+                if (rutas.length === 0) {
+                    fallbackUsado = true;
+                    const distHaversine = haversineKm(coordO.lat, coordO.lon, coordD.lat, coordD.lon);
+                    const distVialEst = Math.max(1.0, Number((distHaversine * 1.25).toFixed(1)));
+                    const minEst = Math.max(5, Math.round((distVialEst / 55) * 60));
+                    rutas = [{
+                        index: 0,
+                        distanciaKm: distVialEst,
+                        duracionMin: minEst,
+                        coordinates: [ [coordO.lat, coordO.lon], [coordD.lat, coordD.lon] ],
+                        esFallback: true
+                    }];
+                }
+
+                rutasEncontradas = rutas;
+                renderizarRutasEnMapaYTarjetas(coordO, coordD, ciudadO, ciudadD);
+
+                if (fallbackUsado) {
+                    mostrarEstadoRuta('OSRM no respondió; se calculó una distancia vial estimada de respaldo.');
+                } else {
+                    const altTxt = rutas.length > 1 ? ` (${rutas.length} opciones encontradas)` : ' (1 ruta encontrada)';
+                    mostrarEstadoRuta(`Rutas calculadas correctamente por carretera${altTxt}. Haz clic en una tarjeta para seleccionarla.`);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = textoOriginal;
+            }
+        }
+
+        // Sincronizar resumen si la página recargó con valores previos
+        updateLiveSummary();
+        // --- 5. LÓGICA DE PREDICCIÓN DE EMPAQUE (SAI-AI) --- //
+        function consultarSugerenciaEmpaque() {
+            const peso = parseFloat(inputs.peso.value) || 0;
+            const ancho = parseFloat(inputs.ancho.value) || 0;
+            const alto = parseFloat(inputs.alto.value) || 0;
+            
+            const badge = document.getElementById('ai-suggestion-badge');
+            const texto = document.getElementById('sugerencia-texto');
+
+            if (peso > 0 && ancho > 0 && alto > 0) {
+                fetch(`/api/guias/predecir-empaque?peso=${peso}&ancho=${ancho}&alto=${alto}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.sugerencia) {
+                            texto.innerText = data.sugerencia;
+                            badge.style.display = 'inline-flex';
+                        }
+                    })
+                    .catch(err => console.error("Error AI:", err));
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Vincular a los inputs relevantes
+        [inputs.peso, inputs.ancho, inputs.alto].forEach(input => {
+            input.addEventListener('input', consultarSugerenciaEmpaque);
+        });
+
+        // Permitir aplicar la sugerencia al hacer clic
+        document.getElementById('ai-suggestion-badge').addEventListener('click', function() {
+            const suggestedValue = document.getElementById('sugerencia-texto').innerText;
+            const select = document.getElementById('tipoCarga');
+            
+            // Buscar la opción que coincida
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === suggestedValue) {
+                    select.selectedIndex = i;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    break;
+                }
+            }
+        });
+    </script>
+
+    <style>
+        @keyframes pulse-ai {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+        #ai-suggestion-badge { cursor: pointer; transition: 0.3s; }
+        #ai-suggestion-badge:hover { transform: translateY(-2px) scale(1.1); background: var(--brand-blue); color: white; }
+    </style>
+
+    <div id="mapModal">
+        <div class="map-container">
+            <div class="map-header">
+                <h3 style="color: var(--brand-blue);"><i class="fa-solid fa-map-location-dot"></i> Seleccionar Ubicación</h3>
+                <button onclick="cerrarMapa()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <p id="tempAddress" style="font-size: 12px; color: var(--text-muted); background: var(--bg-main); padding: 10px; border-radius: 8px;">
+                Haga clic en el mapa para marcar la ubicación...
+            </p>
+            <div id="map"></div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                <button class="btn-cancel" onclick="cerrarMapa()" style="padding: 10px 20px;">Cancelar</button>
+                <button class="btn-map-select" onclick="confirmarUbicacion()" style="padding: 10px 20px;">Confirmar Dirección</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

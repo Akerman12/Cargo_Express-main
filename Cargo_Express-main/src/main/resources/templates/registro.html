@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Registro Premium | SAI Cargo Express</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/jpg" th:href="@{/imagenes/LOGO Cargo Expres.jpg}">
+
+    <style>
+        :root {
+            --sai-blue: #002e7d;
+            --sai-blue-light: #0046be;
+            --sai-orange: #ff6b00;
+            --sai-yellow: #ffcc00;
+            --white: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .master-container {
+            width: 100%;
+            max-width: 1100px;
+            background: var(--white);
+            border-radius: 30px;
+            display: flex;
+            box-shadow: 0 25px 50px -12px rgba(0, 46, 125, 0.25);
+            overflow: hidden;
+            min-height: 700px;
+            animation: containerShow 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* --- LADO PROMO (IZQUIERDA) --- */
+        .side-promo {
+            flex: 1;
+            background: linear-gradient(45deg, var(--sai-blue), var(--sai-blue-light));
+            padding: 60px;
+            color: var(--white);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .side-promo::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+
+        .promo-header img {
+            width: 80px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .promo-body h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 20px;
+        }
+
+        .promo-body h1 span {
+            color: var(--sai-yellow);
+        }
+
+        .promo-body p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            line-height: 1.5;
+        }
+
+        .feature-tag {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+        }
+
+        .feature-tag:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(10px);
+        }
+
+        .feature-tag i {
+            font-size: 1.5rem;
+            color: var(--sai-yellow);
+        }
+
+        /* --- LADO FORMULARIO (DERECHA) --- */
+        .side-form {
+            flex: 1;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #fff;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 30px;
+            transition: 0.3s;
+        }
+
+        .back-link:hover {
+            color: var(--sai-blue);
+            transform: translateX(-5px);
+        }
+
+        .form-header h2 {
+            font-size: 2.2rem;
+            color: var(--sai-blue);
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .form-header p {
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .input-box {
+            position: relative;
+        }
+
+        .input-box i:not(.password-toggle) {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            transition: 0.3s;
+        }
+
+        .input-box input, .input-box select {
+            width: 100%;
+            padding: 16px 16px 16px 50px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-main);
+            transition: 0.3s;
+            outline: none;
+        }
+
+        .input-box input:focus, .input-box select:focus {
+            border-color: var(--sai-blue);
+            box-shadow: 0 0 0 4px rgba(0, 46, 125, 0.1);
+        }
+
+        .input-box input:focus + i {
+            color: var(--sai-blue);
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 18px;
+            left: auto;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .btn-register {
+            background: var(--sai-blue);
+            color: var(--white);
+            border: none;
+            padding: 18px;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+            box-shadow: 0 10px 20px rgba(0, 46, 125, 0.2);
+        }
+
+        .btn-register:hover {
+            background: var(--sai-blue-light);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(0, 46, 125, 0.3);
+        }
+
+        .login-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .login-footer a {
+            color: var(--sai-blue);
+            text-decoration: none;
+            margin-left: 5px;
+        }
+
+        /* Alertas */
+        .alert {
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        .alert-error { background: #fee2e2; color: #dc2626; }
+        .alert-success { background: #dcfce7; color: #166534; }
+
+        /* Fuerza de Contraseña */
+        .strength-container {
+            margin-top: -10px;
+            padding: 0 5px;
+        }
+        .strength-meter {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+        .strength-fill {
+            height: 100%;
+            width: 0;
+            transition: 0.4s;
+        }
+        .strength-text {
+            font-size: 11px;
+            font-weight: 700;
+            text-align: right;
+        }
+
+        @keyframes containerShow {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Aceptación de tratamiento de datos */
+        .terms-check-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 12px 14px;
+            font-size: 12.5px;
+            color: var(--text-main);
+            line-height: 1.45;
+        }
+        .terms-check-box input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-top: 2px;
+            accent-color: var(--sai-blue);
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .terms-trigger {
+            color: var(--sai-blue);
+            font-weight: 700;
+            text-decoration: underline;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            font-family: inherit;
+            font-size: inherit;
+            text-align: left;
+        }
+        .terms-trigger:hover { color: var(--sai-orange); }
+
+        /* Modal Emergente Ley 1581 */
+        .terms-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .terms-modal-card {
+            background: #ffffff;
+            width: 100%;
+            max-width: 620px;
+            max-height: 90vh;
+            border-radius: 22px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: containerShow 0.25s ease-out;
+        }
+        .terms-modal-header {
+            background: linear-gradient(135deg, var(--sai-blue), var(--sai-blue-light));
+            color: white;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .terms-modal-header h3 { font-size: 17px; font-weight: 800; margin: 0; }
+        .terms-close {
+            background: rgba(255,255,255,0.18);
+            border: none;
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .terms-modal-body {
+            padding: 22px 24px;
+            overflow-y: auto;
+            font-size: 13px;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+        .terms-modal-body h4 {
+            color: var(--sai-blue);
+            font-size: 13.5px;
+            font-weight: 800;
+            margin: 14px 0 6px;
+        }
+        .terms-modal-body h4:first-child { margin-top: 0; }
+        .terms-modal-body ul { padding-left: 18px; margin-bottom: 10px; }
+        .terms-modal-body li { margin-bottom: 4px; }
+        .law-link-box {
+            margin-top: 14px;
+            padding: 12px 14px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .law-link-box a {
+            color: var(--sai-blue);
+            font-weight: 700;
+            font-size: 12.5px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .law-link-box a:hover { text-decoration: underline; color: var(--sai-orange); }
+        .terms-modal-footer {
+            padding: 16px 24px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .btn-modal-cancel {
+            padding: 11px 18px;
+            border-radius: 12px;
+            border: 1.5px solid #cbd5e1;
+            background: white;
+            color: var(--text-muted);
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-modal-accept {
+            padding: 11px 22px;
+            border-radius: 12px;
+            border: none;
+            background: var(--sai-blue);
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-modal-accept:hover { background: var(--sai-blue-light); }
+
+        @media (max-width: 992px) {
+            .side-promo { display: none; }
+            .master-container { max-width: 500px; min-height: auto; }
+            .side-form { padding: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="master-container">
+        
+        <section class="side-promo">
+            <div class="promo-header">
+                <img th:src="@{'/imagenes/LOGO Cargo Expres.jpg'}" alt="Logo">
+            </div>
+            
+            <div class="promo-body">
+                <h1>Logística <br><span>Inteligente</span></h1>
+                <p>Únete a la plataforma que está redefiniendo la distribución nacional con precisión total y tecnología IA.</p>
+                
+                <div class="feature-tag">
+                    <i class="fa-solid fa-bolt"></i>
+                    <div>
+                        <div style="font-weight: 800;">Registro Instantáneo</div>
+                        <div style="font-size: 13px; opacity: 0.8;">Acceso inmediato a tu panel operativo.</div>
+                    </div>
+                </div>
+                
+                <div class="feature-tag">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <div>
+                        <div style="font-weight: 800;">Seguridad Bancaria</div>
+                        <div style="font-size: 13px; opacity: 0.8;">Tus datos y guías protegidos al 100%.</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="font-size: 13px; opacity: 0.6; font-weight: 600;">
+                © 2026 SAI Cargo Express | Business Logistics
+            </div>
+        </section>
+
+        <section class="side-form">
+            <a th:href="@{/login}" class="back-link">
+                <i class="fa-solid fa-arrow-left"></i> VOLVER AL LOGIN
+            </a>
+
+            <div class="form-header">
+                <h2>Crea tu Cuenta</h2>
+                <p>Completa tus datos para iniciar la experiencia SAI.</p>
+            </div>
+
+            <div th:if="${mensaje}" class="alert alert-success">
+                <i class="fa-solid fa-circle-check"></i> <span th:text="${mensaje}"></span>
+            </div>
+            <div th:if="${error}" class="alert alert-error">
+                <i class="fa-solid fa-circle-exclamation"></i> <span th:text="${error}"></span>
+            </div>
+
+            <form th:action="@{/registro}" th:object="${usuario}" method="post" class="form-grid" id="regForm">
+                
+                <div class="input-box">
+                    <i class="fa-solid fa-user-gear"></i>
+                    <input type="text" th:field="*{nombre}" placeholder="Nombre Completo" required
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$" 
+                           title="El nombre solo puede contener letras y espacios">
+                </div>
+
+                <div class="input-box">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" th:field="*{username}" id="emailInput" 
+                           placeholder="Correo Corporativo" required
+                           pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$"
+                           title="Ingrese un correo electrónico válido (ejemplo@dominio.com)">
+                </div>
+
+                <div class="input-box">
+                    <i class="fa-solid fa-key"></i>
+                    <input type="password" th:field="*{password}" id="passInput" placeholder="Contraseña de Seguridad" required minlength="6">
+                    <i class="fa-solid fa-eye password-toggle" onclick="togglePass('passInput', this)"></i>
+                </div>
+
+                <div class="strength-container">
+                    <div class="strength-meter">
+                        <div class="strength-fill" id="sFill"></div>
+                    </div>
+                    <div class="strength-text" id="sText">Fuerza: -</div>
+                </div>
+
+                <div class="input-box">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <select th:field="*{rol}" required>
+                        <option value="ROLE_CLIENTE">Cuenta Cliente Estándar</option>
+                        <option value="ROLE_REPARTIDOR">Solicitud de Repartidor</option>
+                    </select>
+                </div>
+
+                <div class="input-box" id="regionBox" style="display:none;">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    <select th:field="*{regionOperacion}" id="regionSelect">
+                        <option value="">Región donde operarás...</option>
+                        <option th:each="r : ${regiones}" th:value="${r.name()}" th:text="${r.etiqueta}"></option>
+                    </select>
+                </div>
+
+                <div class="terms-check-box">
+                    <input type="checkbox" id="aceptaTerminosCheck" name="aceptaTerminos" value="true">
+                    <label for="aceptaTerminosCheck" style="cursor: pointer;">
+                        Autorizo el tratamiento de mis datos personales conforme a la
+                        <button type="button" class="terms-trigger" onclick="abrirModalTerminos(false)">
+                            Política de Tratamiento de Datos y Términos (Ley 1581 de 2012 - Colombia)
+                        </button>.
+                    </label>
+                </div>
+
+                <button type="submit" class="btn-register">REGISTRARSE AHORA</button>
+            </form>
+
+            <div class="login-footer">
+                ¿Ya tienes cuenta? <a th:href="@{/login}">Inicia Sesión</a>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Ventana Emergente: Términos y Tratamiento de Datos (Ley 1581 de 2012 - Colombia) -->
+    <div id="terminosModal" class="terms-modal" role="dialog" aria-modal="true" aria-labelledby="terminosTitulo">
+        <div class="terms-modal-card">
+            <div class="terms-modal-header">
+                <h3 id="terminosTitulo"><i class="fa-solid fa-scale-balanced"></i> Términos y Tratamiento de Datos Personales</h3>
+                <button type="button" class="terms-close" onclick="cerrarModalTerminos()" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="terms-modal-body">
+                <h4>1. Marco Legal Colombiano (Habeas Data)</h4>
+                <p>
+                    En cumplimiento del <strong>Artículo 15 de la Constitución Política de Colombia</strong>, la
+                    <strong>Ley Estatutaria 1581 de 2012</strong> (Régimen General de Protección de Datos Personales) y el
+                    <strong>Decreto Reglamentario 1377 de 2013</strong>, <strong>SAI Cargo Express</strong> informa que los datos
+                    suministrados en el registro serán tratados de forma confidencial, segura y bajo consentimiento previo, expreso e informado.
+                </p>
+
+                <h4>2. Finalidad según tu Tipo de Cuenta</h4>
+                <ul>
+                    <li><strong>Cuenta Cliente:</strong> creación y gestión de guías de envío, cálculo de tarifas, emisión de recibos, notificaciones por correo y seguimiento de paquetes.</li>
+                    <li><strong>Cuenta Repartidor:</strong> verificación y aprobación del perfil operativo, asignación de vehículos, rutas regionales multi-parada y trazabilidad GPS durante la jornada.</li>
+                </ul>
+
+                <h4>3. Derechos del Titular (Art. 8, Ley 1581 de 2012)</h4>
+                <ul>
+                    <li>Conocer, actualizar y rectificar sus datos personales en cualquier momento.</li>
+                    <li>Solicitar prueba de esta autorización y ser informado del uso dado a sus datos.</li>
+                    <li>Revocar la autorización o solicitar la supresión del dato cuando proceda legalmente.</li>
+                    <li>Presentar quejas ante la <strong>Superintendencia de Industria y Comercio (SIC)</strong> por infracciones a la ley.</li>
+                </ul>
+
+                <div class="law-link-box">
+                    <span style="font-size: 12px; color: #1e3a8a; font-weight: 600;">
+                        <i class="fa-solid fa-landmark"></i> Texto oficial de la norma en Colombia:
+                    </span>
+                    <a href="https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=49981"
+                       target="_blank" rel="noopener noreferrer">
+                        Ver Ley Estatutaria 1581 de 2012 (Función Pública) <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button type="button" class="btn-modal-cancel" onclick="cerrarModalTerminos()">Cancelar</button>
+                <button type="button" class="btn-modal-accept" onclick="aceptarTerminosYContinuar()">
+                    <i class="fa-solid fa-check"></i> Acepto los Términos y Datos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // La región de operación solo se pide a quien solicita cuenta de repartidor
+        (function () {
+            const rol = document.getElementById('rol');
+            const box = document.getElementById('regionBox');
+            const sel = document.getElementById('regionSelect');
+            if (!rol || !box || !sel) return;
+            function sync() {
+                const esRep = rol.value === 'ROLE_REPARTIDOR';
+                box.style.display = esRep ? '' : 'none';
+                sel.required = esRep;
+                if (!esRep) sel.value = '';
+            }
+            rol.addEventListener('change', sync);
+            sync();
+        })();
+
+        function togglePass(id, el) {
+            const input = document.getElementById(id);
+            if (input.type === "password") {
+                input.type = "text";
+                el.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = "password";
+                el.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        const passInput = document.getElementById('passInput');
+        const sFill = document.getElementById('sFill');
+        const sText = document.getElementById('sText');
+
+        passInput.addEventListener('input', () => {
+            const val = passInput.value;
+            let score = 0;
+            if (val.length >= 6) score += 25;
+            if (val.length >= 10) score += 25;
+            if (/[A-Z]/.test(val)) score += 25;
+            if (/[0-9]/.test(val)) score += 25;
+
+            sFill.style.width = score + '%';
+            if (score <= 25) { sFill.style.background = '#ef4444'; sText.innerText = 'Fuerza: Débil'; sText.style.color = '#ef4444'; }
+            else if (score <= 50) { sFill.style.background = '#f59e0b'; sText.innerText = 'Fuerza: Media'; sText.style.color = '#f59e0b'; }
+            else { sFill.style.background = '#10b981'; sText.innerText = 'Fuerza: Excelente'; sText.style.color = '#10b981'; }
+        });
+        // Modal de términos y tratamiento de datos (Ley 1581 de 2012)
+        let enviarAlAceptarTerminos = false;
+        const terminosModal = document.getElementById('terminosModal');
+        const aceptaCheck = document.getElementById('aceptaTerminosCheck');
+        const regForm = document.getElementById('regForm');
+
+        function abrirModalTerminos(disparadoPorEnvio) {
+            enviarAlAceptarTerminos = Boolean(disparadoPorEnvio);
+            terminosModal.style.display = 'flex';
+        }
+
+        function cerrarModalTerminos() {
+            enviarAlAceptarTerminos = false;
+            terminosModal.style.display = 'none';
+        }
+
+        function aceptarTerminosYContinuar() {
+            aceptaCheck.checked = true;
+            const debeEnviar = enviarAlAceptarTerminos;
+            terminosModal.style.display = 'none';
+            enviarAlAceptarTerminos = false;
+            if (debeEnviar) {
+                regForm.submit();
+            }
+        }
+
+        if (regForm && aceptaCheck) {
+            regForm.addEventListener('submit', function (e) {
+                if (!aceptaCheck.checked) {
+                    e.preventDefault();
+                    abrirModalTerminos(true);
+                }
+            });
+        }
+
+        window.addEventListener('click', function (e) {
+            if (e.target === terminosModal) {
+                cerrarModalTerminos();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+CARGA EXPRESS - TARIFAS Y CALCULO DEL PRECIO
+
+FUENTE
+Las reglas de este documento se extraen de PriceCalculatorService.java.
+
+CONSTANTES DEL SERVICIO
+- Tarifa base fija: 12500 COP.
+- Precio por kilogramo cobrable: 3500 COP.
+- Seguro: 2 por ciento del valor declarado.
+- Recargo por zona dificil: 15000 COP.
+- Recargo por distancia vial: 25 COP por cada kilometro de la ruta por carretera seleccionada al crear la guia.
+
+PESO VOLUMETRICO
+El servicio calcula el peso volumetrico utilizando las tres dimensiones:
+(alturaCm * anchoCm * largoCm) / 4000.0
+Si la guia no tiene largo registrado, se asume un largo de 20 cm.
+
+PESO COBRABLE
+El peso que se usa para el cobro es el mayor entre:
+- Peso fisico registrado en pesoKg.
+- Peso volumetrico calculado.
+
+FORMULA DEL PRECIO
+Precio inicial = 12500
+Mas (peso cobrable * 3500)
+Mas (valor declarado * 0.02)
+Mas (kilometros de la ruta vial * 25) cuando la guia tiene una ruta por carretera seleccionada.
+Mas recargo de 15000 cuando la ruta incluye una ciudad especial.
+El resultado se redondea con Math.round.
+
+CIUDADES QUE ACTIVAN RECARGO
+El metodo esRutaEspecial considera las siguientes ciudades, tanto en origen como en destino:
+- Leticia
+- Quibdo
+- Puerto Carreno
+- Mitu
+- Inirida
+
+EJEMPLO ILUSTRATIVO
+Si el peso cobrable es 2 kg, el valor declarado es 100000 COP y no aplica zona dificil:
+12500 + (2 * 3500) + (100000 * 0.02) = 19500 COP.
+
+REGLAS PARA SAI-BOT
+- Para una cotizacion exacta, utilizar la herramienta calcularCostoEnvio o el servicio real.
+- No agregar cargos que no aparezcan en este documento.
+- La cotizacion rapida del asistente no conoce la ruta vial, por eso no incluye el recargo de 25 COP por kilometro; el valor final se confirma al crear la guia.
+- Aplicar el recargo si la ciudad de origen o destino coincide con una de las cinco ciudades listadas.
+- Indicar que el calculo depende del peso fisico, dimensiones, valor declarado y ciudades de origen y destino.

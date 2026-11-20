@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Barra superior solo visible en pantallas <= 1024px -->
+<div th:fragment="sidebar(activePage)">
+    <div class="sai-mobile-bar">
+        <a th:href="${#authorization.expression('hasRole(''ROLE_CLIENTE'') and !hasRole(''ROLE_ADMIN'') and !hasRole(''ROLE_REPARTIDOR'')') ? '/cliente' : '/menu'}"
+           class="sai-mobile-brand">
+            <img th:src="@{/imagenes/LOGO Cargo Expres.jpg}" alt="SAI Cargo">
+            <span>SAI CARGO</span>
+        </a>
+        <button type="button" class="sai-menu-btn" onclick="saiToggleSidebar()" aria-label="Abrir menú">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <div id="saiSidebarBackdrop" class="sai-sidebar-backdrop" onclick="saiToggleSidebar(false)"></div>
+
+    <aside class="sidebar" id="saiSidebar">
+        <a th:href="${#authorization.expression('hasRole(''ROLE_CLIENTE'') and !hasRole(''ROLE_ADMIN'') and !hasRole(''ROLE_REPARTIDOR'')') ? '/cliente' : '/menu'}"
+           class="sidebar-logo">
+            <img th:src="@{/imagenes/LOGO Cargo Expres.jpg}" alt="Logo SAI Cargo">
+            <span class="sidebar-role-chip"
+                  th:text="${#authorization.expression('hasRole(''ROLE_ADMIN'')') ? 'Administrador' : (#authorization.expression('hasRole(''ROLE_REPARTIDOR'')') ? 'Repartidor' : 'Portal Clientes')}">
+                Portal
+            </span>
+        </a>
+
+        <!-- ===== MENÚ CLIENTE ===== -->
+        <th:block th:if="${#authorization.expression('hasRole(''ROLE_CLIENTE'') and !hasRole(''ROLE_ADMIN'') and !hasRole(''ROLE_REPARTIDOR'')')}">
+            <p class="nav-label">Mi Espacio</p>
+            <a th:href="@{/cliente}" th:classappend="${activePage == 'portal'} ? 'active' : ''">
+                <i class="fa-solid fa-house"></i> <span>Mi Portal</span>
+            </a>
+            <a th:href="@{/guias/crear}" class="btn-highlight" th:classappend="${activePage == 'crear'} ? 'active' : ''">
+                <i class="fa-solid fa-plus-circle"></i> <span>Despachar Guía</span>
+            </a>
+            <a th:href="@{/guias/mis-guias}" th:classappend="${activePage == 'guias'} ? 'active' : ''">
+                <i class="fa-solid fa-boxes-stacked"></i> <span>Mis Guías</span>
+            </a>
+            <a th:href="@{/direcciones}" th:classappend="${activePage == 'direcciones'} ? 'active' : ''">
+                <i class="fa-solid fa-address-book"></i> <span>Mis Direcciones</span>
+            </a>
+
+            <p class="nav-label">Cuenta y Ayuda</p>
+            <a th:href="@{/usuario/perfil}" th:classappend="${activePage == 'perfil'} ? 'active' : ''">
+                <i class="fa-solid fa-user-shield"></i> <span>Mi Perfil</span>
+            </a>
+            <a th:href="@{/rastreo}">
+                <i class="fa-solid fa-magnifying-glass-location"></i> <span>Rastrear Envío</span>
+            </a>
+            <a th:href="@{/soporte}">
+                <i class="fa-solid fa-headset"></i> <span>Centro de Soporte</span>
+            </a>
+        </th:block>
+
+        <!-- ===== MENÚ REPARTIDOR ===== -->
+        <th:block th:if="${#authorization.expression('hasRole(''ROLE_REPARTIDOR'') and !hasRole(''ROLE_ADMIN'')')}">
+            <p class="nav-label">Operación en Ruta</p>
+            <a th:href="@{/menu}" th:classappend="${activePage == 'menu'} ? 'active' : ''">
+                <i class="fa-solid fa-border-all"></i> <span>Dashboard</span>
+            </a>
+            <a th:href="@{/reparto}" class="btn-highlight">
+                <i class="fa-solid fa-truck-fast"></i> <span>Centro de Reparto</span>
+            </a>
+            <a th:href="@{/reparto/ruta-mapa}">
+                <i class="fa-solid fa-map-location-dot"></i> <span>Mapa de Ruta Activa</span>
+            </a>
+            <a th:href="@{/guias/mis-guias}" th:classappend="${activePage == 'guias'} ? 'active' : ''">
+                <i class="fa-solid fa-boxes-stacked"></i> <span>Mis Guías</span>
+            </a>
+
+            <p class="nav-label">Cuenta</p>
+            <a th:href="@{/usuario/perfil}" th:classappend="${activePage == 'perfil'} ? 'active' : ''">
+                <i class="fa-solid fa-user-shield"></i> <span>Mi Perfil</span>
+            </a>
+            <a th:href="@{/soporte}">
+                <i class="fa-solid fa-headset"></i> <span>Soporte</span>
+            </a>
+        </th:block>
+
+        <!-- ===== MENÚ ADMINISTRADOR ===== -->
+        <th:block th:if="${#authorization.expression('hasRole(''ROLE_ADMIN'')')}">
+            <p class="nav-label">Operaciones</p>
+            <a th:href="@{/menu}" th:classappend="${activePage == 'menu'} ? 'active' : ''">
+                <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
+            </a>
+            <a th:href="@{/guias/todas}" th:classappend="${activePage == 'todas'} ? 'active' : ''">
+                <i class="fa-solid fa-boxes-stacked"></i> <span>Control Global Guías</span>
+            </a>
+            <a th:href="@{/admin/rutas}" th:classappend="${activePage == 'rutas'} ? 'active' : ''">
+                <i class="fa-solid fa-route"></i> <span>Planificador de Rutas</span>
+            </a>
+            <a th:href="@{/admin/vehiculos}" th:classappend="${activePage == 'vehiculos'} ? 'active' : ''">
+                <i class="fa-solid fa-truck-ramp-box"></i> <span>Gestión de Flota</span>
+            </a>
+            <a th:href="@{/reparto}">
+                <i class="fa-solid fa-truck-fast"></i> <span>Módulo de Reparto</span>
+            </a>
+
+            <p class="nav-label">Administración</p>
+            <a th:href="@{/admin/usuarios}" th:classappend="${activePage == 'usuarios'} ? 'active' : ''">
+                <i class="fa-solid fa-users-gear"></i> <span>Gestión Usuarios</span>
+            </a>
+            <a th:href="@{/pago/admin/ver}" th:classappend="${activePage == 'pagos'} ? 'active' : ''">
+                <i class="fa-solid fa-file-invoice-dollar"></i> <span>Auditoría de Pagos</span>
+            </a>
+            <a th:href="@{/admin/warroom}" class="btn-warroom">
+                <i class="fa-solid fa-satellite-dish"></i> <span>WAR ROOM (LIVE)</span>
+            </a>
+            <a th:href="@{/admin/weka-models}">
+                <i class="fa-solid fa-brain"></i> <span>Modelos IA Weka</span>
+            </a>
+
+            <p class="nav-label">Cuenta</p>
+            <a th:href="@{/usuario/perfil}" th:classappend="${activePage == 'perfil'} ? 'active' : ''">
+                <i class="fa-solid fa-user-shield"></i> <span>Mi Perfil</span>
+            </a>
+        </th:block>
+
+        <form th:action="@{/logout}" method="post" id="logoutForm" class="sidebar-logout-form">
+            <a href="javascript:void(0)" onclick="document.getElementById('logoutForm').submit()" class="btn-logout">
+                <i class="fa-solid fa-power-off"></i> <span>Cerrar Sesión</span>
+            </a>
+        </form>
+    </aside>
+
+    <script>
+        function saiToggleSidebar(forceState) {
+            const sb = document.getElementById('saiSidebar');
+            const bd = document.getElementById('saiSidebarBackdrop');
+            if (!sb || !bd) return;
+            const open = typeof forceState === 'boolean' ? forceState : !sb.classList.contains('open');
+            sb.classList.toggle('open', open);
+            bd.classList.toggle('open', open);
+        }
+    </script>
+</div>
+
+</body>
+</html>
+

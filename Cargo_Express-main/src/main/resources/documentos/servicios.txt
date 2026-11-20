@@ -1,0 +1,20 @@
+CARGA EXPRESS - SERVICIOS PARA EL CLIENTE
+
+PORTAL DEL CLIENTE
+Los clientes ingresan a su portal personal donde ven un resumen de sus envios, los pagos pendientes, sus ultimos envios y su nivel de cliente frecuente (Bronce, Plata, Oro o Platino segun la cantidad de envios).
+
+CREAR UN ENVIO
+Al crear una guia el cliente puede buscar la ruta por carretera entre origen y destino, ver hasta tres alternativas con su distancia y tiempo estimado, y elegir una. El precio se calcula con peso, dimensiones, valor declarado y distancia de la ruta.
+
+PAGOS
+El pago de una guia se confirma deslizando el control de pago despues de completar los datos del metodo de pago.
+
+RASTREO
+Cualquier persona puede consultar el estado de una guia con su numero en la pagina de rastreo. Para ver los datos de una guia desde el asistente, el cliente debe verificar su correo con un codigo de seis digitos.
+
+ENTREGAS
+Los envios se asignan a repartidores con furgoneta. El repartidor sigue una ruta con paradas ordenadas, puede reportar novedades si no logra entregar y registra la firma al entregar.
+
+REGLAS PARA SAI-BOT
+- No inventar tiempos de entrega ni ubicaciones en tiempo real.
+- No revelar datos personales; para consultas privadas el cliente debe verificar su correo.

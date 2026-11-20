@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planificador de Rutas | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="icon" type="image/jpg" th:href="@{/imagenes/LOGO Cargo Expres.jpg}">
+    <link rel="stylesheet" th:href="@{/css/sai-theme.css}">
+    <style>
+        :root {
+            --brand-blue: #002855;
+            --brand-orange: #FF6600;
+            --bg-main: #F4F7F9;
+            --white: #FFFFFF;
+            --text-dark: #1E293B;
+            --text-muted: #64748B;
+            --border-light: #E2E8F0;
+            --success: #166534;
+            --success-bg: #DCFCE7;
+            --info-blue: #1E40AF;
+            --info-bg: #DBEAFE;
+            --warning: #B45309;
+            --warning-bg: #FEF3C7;
+            --danger: #991B1B;
+            --danger-bg: #FEE2E2;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: var(--bg-main); color: var(--text-dark); display: flex; min-height: 100vh; }
+
+        .sidebar { width: 270px; background: var(--white); border-right: 1px solid var(--border-light); padding: 30px 20px; position: fixed; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+        .sidebar-logo img { width: 140px; margin-bottom: 30px; display: block; margin-left: auto; margin-right: auto; }
+        .sidebar a { color: var(--text-muted); text-decoration: none; padding: 12px 16px; border-radius: 10px; display: flex; align-items: center; gap: 15px; font-weight: 600; margin-bottom: 5px; transition: 0.3s; }
+        .sidebar a:hover, .sidebar a.active { background: var(--bg-main); color: var(--brand-blue); }
+
+        .main-content { margin-left: 270px; flex: 1; padding: 35px 40px; max-width: calc(100% - 270px); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .header h1 { font-size: 25px; color: var(--brand-blue); font-weight: 800; display: flex; align-items: center; gap: 12px; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 16px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: space-between; }
+        .stat-info .stat-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+        .stat-info .stat-value { font-size: 26px; font-weight: 800; color: var(--text-dark); }
+        .stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
+        .alert { padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+        .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #BBF7D0; }
+        .alert-error { background: var(--danger-bg); color: var(--danger); border: 1px solid #FECACA; }
+        .alert-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid #FDE68A; }
+        .alert-info { background: var(--info-bg); color: var(--info-blue); border: 1px solid #BFDBFE; }
+
+        /* Planner Workspace */
+        .planner-grid { display: grid; grid-template-columns: 470px 1fr; gap: 24px; margin-bottom: 30px; align-items: start; }
+        .panel-card { background: var(--white); border-radius: 20px; padding: 22px; border: 1px solid var(--border-light); box-shadow: 0 10px 25px rgba(0,0,0,0.04); }
+        .panel-title { font-size: 15px; font-weight: 800; color: var(--brand-blue); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
+        .form-group select { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border-light); font-size: 13px; font-family: inherit; outline: none; background: white; transition: 0.2s; }
+        .form-group select:focus { border-color: var(--brand-blue); box-shadow: 0 0 0 3px rgba(0,40,133,0.1); }
+
+        .van-summary { background: #F8FAFC; border: 1px solid var(--border-light); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 12px; display: none; }
+        .van-summary-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .placa-badge { background: #0F172A; color: #F8FAFC; padding: 3px 9px; border-radius: 6px; font-family: monospace; font-size: 12px; font-weight: 800; border: 1px solid #CBD5E1; letter-spacing: 1px; }
+
+        /* Stops List */
+        .stops-header { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 10px; }
+        .stops-list { display: flex; flex-direction: column; gap: 9px; max-height: 310px; overflow-y: auto; padding-right: 4px; }
+        .stop-item { border: 1px solid var(--border-light); border-radius: 12px; padding: 10px 12px; background: #FAFCFF; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .stop-item.excluded { opacity: 0.55; background: #F8FAFC; }
+        .stop-order { min-width: 28px; height: 28px; border-radius: 50%; background: var(--brand-blue); color: white; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        .stop-item.excluded .stop-order { background: #94A3B8; }
+        .stop-body { flex: 1; min-width: 0; }
+        .stop-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--brand-blue); }
+        .stop-addr { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stop-meta { display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+        .geo-pill { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 50px; }
+        .geo-exact { background: var(--success-bg); color: var(--success); }
+        .geo-osm { background: var(--info-bg); color: var(--info-blue); }
+        .geo-approx { background: var(--warning-bg); color: var(--warning); }
+        .geo-loading { background: #E2E8F0; color: var(--text-muted); }
+
+        .stop-actions { display: flex; flex-direction: column; gap: 3px; }
+        .btn-mini { width: 24px; height: 22px; border-radius: 6px; border: 1px solid var(--border-light); background: white; color: var(--text-dark); cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        .btn-mini:hover:not(:disabled) { background: var(--brand-blue); color: white; border-color: var(--brand-blue); }
+        .btn-mini:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* Action Buttons & Metrics */
+        .route-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+        .btn { padding: 10px 14px; border-radius: 10px; border: none; cursor: pointer; font-weight: 700; transition: 0.2s; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; text-decoration: none; font-family: inherit; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        .btn-primary { background: var(--brand-blue); color: white; box-shadow: 0 4px 12px rgba(0,40,133,0.2); }
+        .btn-primary:hover:not(:disabled) { background: #001f44; transform: translateY(-1px); }
+        .btn-orange { background: var(--brand-orange); color: white; box-shadow: 0 4px 12px rgba(255,102,0,0.25); }
+        .btn-orange:hover:not(:disabled) { background: #e05a00; transform: translateY(-1px); }
+        .btn-outline { background: white; color: var(--brand-blue); border: 1px solid var(--border-light); }
+        .btn-outline:hover:not(:disabled) { background: #F8FAFC; border-color: var(--brand-blue); }
+        .btn-danger { background: var(--danger-bg); color: var(--danger); }
+        .btn-danger:hover { background: #FECACA; }
+        .btn-info { background: var(--info-bg); color: var(--info-blue); }
+        .btn-info:hover { background: #BFDBFE; }
+
+        .route-metrics { display: none; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; background: #F0F9FF; border: 1px solid #BAE6FD; padding: 12px; border-radius: 12px; text-align: center; }
+        .metric-label { font-size: 10px; text-transform: uppercase; font-weight: 700; color: var(--info-blue); }
+        .metric-val { font-size: 16px; font-weight: 800; color: var(--brand-blue); }
+
+        /* Map */
+        .map-topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        #map { width: 100%; height: 560px; border-radius: 14px; border: 1px solid var(--border-light); z-index: 1; }
+        .map-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 11px; color: var(--text-muted); font-weight: 600; align-items: center; }
+
+        .marker-pin { border-radius: 50%; color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2.5px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.35); font-family: 'Poppins', sans-serif; }
+        .marker-hub { background: var(--brand-orange); width: 34px; height: 34px; font-size: 13px; }
+        .marker-stop { background: var(--brand-blue); width: 28px; height: 28px; font-size: 12px; }
+
+        /* Table Card */
+        .table-card { background: var(--white); border-radius: 20px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.04); border: 1px solid var(--border-light); }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 13px 12px; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-light); letter-spacing: 0.5px; }
+        td { padding: 14px 12px; border-bottom: 1px solid #F1F5F9; font-size: 13px; vertical-align: middle; }
+        .badge { padding: 4px 11px; border-radius: 50px; font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+        .badge-asignada { background: var(--info-bg); color: var(--info-blue); }
+        .badge-en_curso { background: var(--warning-bg); color: var(--warning); }
+        .badge-completada { background: var(--success-bg); color: var(--success); }
+        .badge-recogida { background: #ffedd5; color: #9a3412; }
+        .badge-entrega { background: #e0f2fe; color: #0369a1; }
+
+        @media (max-width: 1150px) {
+            .planner-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <div th:replace="~{fragments/sai-sidebar :: sidebar('rutas')}"></div>
+
+    <main class="main-content">
+        <div class="header">
+            <div>
+                <h1><i class="fa-solid fa-route" style="color: var(--brand-orange);"></i> Planificador de Rutas Multi-Parada</h1>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: 3px;">Planifica rutas multi-parada de <strong>Recogida</strong> (en origen) o <strong>Entrega</strong> (hacia destino) limitadas a la región de cada repartidor.</p>
+            </div>
+            <a th:href="@{/guias/todas}" class="btn btn-outline">
+                <i class="fa-solid fa-boxes-stacked"></i> Asignar Más Paquetes
+            </a>
+        </div>
+
+        <div th:if="${mensaje}" class="alert alert-success">
+            <i class="fa-solid fa-circle-check"></i> <span th:text="${mensaje}"></span>
+        </div>
+        <div th:if="${error}" class="alert alert-error">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span th:text="${error}"></span>
+        </div>
+        <div id="plannerFeedback" class="alert" style="display: none;"></div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Total Rutas</div>
+                    <div class="stat-value" th:text="${totalRutas}">0</div>
+                </div>
+                <div class="stat-icon" style="background: #F1F5F9; color: var(--brand-blue);"><i class="fa-solid fa-map-location-dot"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Asignadas</div>
+                    <div class="stat-value" style="color: var(--info-blue);" th:text="${totalAsignadas}">0</div>
+                </div>
+                <div class="stat-icon" style="background: var(--info-bg); color: var(--info-blue);"><i class="fa-solid fa-clipboard-check"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">En Curso</div>
+                    <div class="stat-value" style="color: var(--warning);" th:text="${totalEnCurso}">0</div>
+                </div>
+                <div class="stat-icon" style="background: var(--warning-bg); color: var(--warning);"><i class="fa-solid fa-truck-fast"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <div class="stat-label">Completadas</div>
+                    <div class="stat-value" style="color: var(--success);" th:text="${totalCompletadas}">0</div>
+                </div>
+                <div class="stat-icon" style="background: var(--success-bg); color: var(--success);"><i class="fa-solid fa-flag-checkered"></i></div>
+            </div>
+        </div>
+
+        <!-- Workspace: Controles + Mapa -->
+        <div class="planner-grid">
+            <!-- Panel Izquierdo -->
+            <div class="panel-card">
+                <div class="panel-title"><i class="fa-solid fa-sliders" style="color: var(--brand-orange);"></i> Configurar Despacho Multi-Parada</div>
+
+                <div class="form-group">
+                    <label for="tipoRutaSelect">1. Tipo de Ruta Multi-Parada</label>
+                    <select id="tipoRutaSelect" onchange="alCambiarTipoRuta()">
+                        <option value="RECOGIDA">1. Ruta de Recogida (guías Pendientes, origen)</option>
+                        <option value="ENTREGA" selected>2. Ruta de Entrega (guías En Sucursal, destino)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="repartidorSelect">2. Repartidor con Furgoneta</label>
+                    <select id="repartidorSelect" onchange="cargarDatosRepartidor(this.value)">
+                        <option value="">-- Selecciona un repartidor --</option>
+                        <option th:each="rep : ${repartidores}"
+                                th:value="${rep.id}"
+                                th:text="${rep.displayLabel + (rep.regionEtiqueta != null ? ' · ' + rep.regionEtiqueta : ' · SIN REGIÓN')}"></option>
+                    </select>
+                    <div th:if="${#lists.isEmpty(repartidores)}" style="margin-top: 8px; font-size: 12px; color: var(--warning);">
+                        <i class="fa-solid fa-triangle-exclamation"></i> No hay repartidores con furgoneta asignada. Configúralos en <a th:href="@{/admin/vehiculos}" style="color: var(--brand-blue); font-weight: 700;">Gestión de Flota</a>.
+                    </div>
+                </div>
+
+                <div id="vanSummary" class="van-summary">
+                    <div class="van-summary-row">
+                        <span><strong>Vehículo:</strong> <span id="vanModelText"></span></span>
+                        <span class="placa-badge" id="vanPlacaBadge">---</span>
+                    </div>
+                    <div class="van-summary-row" style="margin-bottom: 0; color: var(--text-muted);">
+                        <span>Carga en furgoneta: <strong id="vanLoadText">0 kg</strong></span>
+                        <span>Capacidad máx: <strong id="vanCapText">0 kg</strong></span>
+                    </div>
+                    <div style="margin-top: 6px; font-size: 12px;">
+                        <span><strong>Región de operación:</strong> <span id="vanRegionText">-</span></span>
+                    </div>
+                </div>
+
+                <div id="rutaActivaWarning" class="alert alert-warning" style="display: none; margin-bottom: 14px; font-size: 12px;">
+                    <i class="fa-solid fa-lock"></i>
+                    <span id="rutaActivaWarningText"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="capitalHubSelect">3. Capital Hub Regional (Punto 0 de salida)</label>
+                    <select id="capitalHubSelect" onchange="alCambiarHub()">
+                        <option th:each="cap : ${capitales}"
+                                th:value="${cap.key}"
+                                th:data-lat="${cap.value[0]}"
+                                th:data-lon="${cap.value[1]}"
+                                th:text="${cap.key}"></option>
+                    </select>
+                </div>
+
+                <div class="stops-header">
+                    <span style="font-size: 12px; font-weight: 700;"><span id="stopsHeaderLabel">4. Paradas de Entrega</span> (<span id="stopsCount">0</span>)</span>
+                    <button type="button" class="btn btn-outline" style="padding: 4px 10px; font-size: 11px;" id="btnRegeocodificar" onclick="regeocodificarFaltantes()" disabled>
+                        <i class="fa-solid fa-location-crosshairs"></i> Reubicar faltantes
+                    </button>
+                </div>
+
+                <div id="stopsContainer" class="stops-list">
+                    <div style="text-align: center; padding: 28px 10px; color: var(--text-muted); font-size: 12px;">
+                        <i class="fa-solid fa-route" style="font-size: 28px; opacity: 0.3; display: block; margin-bottom: 8px;"></i>
+                        Selecciona un repartidor para cargar sus guías pendientes de ruta.
+                    </div>
+                </div>
+
+                <div class="route-actions">
+                    <button type="button" class="btn btn-primary" id="btnOptimizar" onclick="trazarRutaOSRM(true)" disabled>
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Optimizar y Trazar
+                    </button>
+                    <button type="button" class="btn btn-outline" id="btnManual" onclick="trazarRutaOSRM(false)" disabled>
+                        <i class="fa-solid fa-arrows-up-down-left-right"></i> Trazar Orden Manual
+                    </button>
+                </div>
+
+                <div id="routeMetrics" class="route-metrics">
+                    <div>
+                        <div class="metric-label">Distancia Vial</div>
+                        <div class="metric-val" id="metricKm">0 km</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Tiempo Estimado</div>
+                        <div class="metric-val" id="metricMin">0 min</div>
+                    </div>
+                    <div>
+                        <div class="metric-label">Paradas</div>
+                        <div class="metric-val" id="metricStops">0</div>
+                    </div>
+                </div>
+
+                <form id="assignRouteForm" th:action="@{/admin/rutas/asignar}" method="post" style="margin-top: 16px;">
+                    <input type="hidden" name="repartidorId" id="formRepartidorId">
+                    <input type="hidden" name="tipo" id="formTipo" value="ENTREGA">
+                    <input type="hidden" name="capitalHub" id="formCapitalHub">
+                    <input type="hidden" name="guiaIdsJson" id="formGuiaIdsJson">
+                    <input type="hidden" name="coordenadasJson" id="formCoordenadasJson">
+                    <input type="hidden" name="distanciaTotalKm" id="formDistanciaTotalKm">
+                    <input type="hidden" name="tiempoEstimadoMinutos" id="formTiempoEstimadoMinutos">
+                    <input type="hidden" name="geometriaJson" id="formGeometriaJson">
+
+                    <button type="submit" class="btn btn-orange" id="btnConfirmarRuta" style="width: 100%; padding: 12px; font-size: 13px;" disabled>
+                        <i class="fa-solid fa-paper-plane"></i> Confirmar y Asignar Ruta al Repartidor
+                    </button>
+                </form>
+            </div>
+
+            <!-- Panel Derecho: Mapa Leaflet -->
+            <div class="panel-card">
+                <div class="map-topbar">
+                    <div class="panel-title" style="margin-bottom: 0;">
+                        <i class="fa-solid fa-map" style="color: var(--brand-orange);"></i>
+                        <span id="mapModeTitle">Vista Previa del Trazado Vial</span>
+                    </div>
+                    <button type="button" id="btnVolverPlanificador" class="btn btn-outline" style="display: none; padding: 6px 12px; font-size: 11px;" onclick="volverModoPlanificacion()">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Volver al Planificador
+                    </button>
+                </div>
+
+                <div id="map"></div>
+
+                <div class="map-legend">
+                    <span><strong style="color: var(--brand-orange);">● 0:</strong> Hub Regional</span>
+                    <span><strong style="color: var(--brand-blue);">● 1..N:</strong> Paradas en secuencia</span>
+                    <span><strong style="color: #0284C7;">━━</strong> Trazado vial OSRM</span>
+                    <span style="margin-left: auto;"><i class="fa-solid fa-hand-pointer"></i> Puedes arrastrar los pines para afinar coordenadas</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de Rutas Asignadas -->
+        <div class="table-card">
+            <div style="margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 16px; font-weight: 800; color: var(--brand-blue);">Rutas Planificadas y Despachos</h3>
+                <span style="font-size: 12px; color: var(--text-muted);">Cada ruta agrupa múltiples paradas conectadas desde el Hub regional</span>
+            </div>
+
+            <div th:if="${#lists.isEmpty(rutas)}" style="text-align: center; padding: 35px; color: var(--text-muted);">
+                <i class="fa-solid fa-map-pin" style="font-size: 40px; opacity: 0.3; margin-bottom: 10px;"></i>
+                <p style="font-weight: 600;">Aún no se ha asignado ninguna ruta multi-parada.</p>
+                <p style="font-size: 12px;">Selecciona arriba un repartidor con guías cargadas, traza la ruta en OSRM y confírmala.</p>
+            </div>
+
+            <table th:unless="${#lists.isEmpty(rutas)}">
+                <thead>
+                    <tr>
+                        <th>Ruta</th>
+                        <th>Repartidor / Furgoneta</th>
+                        <th>Hub Salida</th>
+                        <th>Paradas y Carga</th>
+                        <th>Recorrido Vial</th>
+                        <th>Estado</th>
+                        <th style="text-align: right;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="r : ${rutas}">
+                        <td>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span style="font-weight: 800; color: var(--brand-blue);" th:text="'#R-' + ${r.id}">#R-1</span>
+                                <span class="badge" th:classappend="${r.tipo == 'RECOGIDA' ? 'badge-recogida' : 'badge-entrega'}"
+                                      th:text="${r.tipo ?: 'ENTREGA'}">ENTREGA</span>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted);" th:text="${r.fecha != null ? #temporals.format(r.fecha, 'dd/MM HH:mm') : '-'}">15/11 10:00</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700;" th:text="${r.repartidorNombre}">Nombre</div>
+                            <div style="margin-top: 3px;">
+                                <span class="placa-badge" th:text="${r.vehiculoPlaca ?: '-'}">ABC123</span>
+                                <span style="font-size: 11px; color: var(--text-muted);" th:text="${r.vehiculoModelo ?: ''}"></span>
+                            </div>
+                        </td>
+                        <td>
+                            <span style="font-weight: 700; color: var(--brand-orange);"><i class="fa-solid fa-warehouse"></i> <span th:text="${r.capitalHub}">BOGOTÁ</span></span>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700;" th:text="${r.cantidadParadas} + ' parada(s)'">3 parada(s)</div>
+                            <div style="font-size: 11px; color: var(--text-muted);" th:text="${r.pesoTotalKg} + ' kg cargados'">12.5 kg</div>
+                        </td>
+                        <td>
+                            <div style="font-weight: 700;" th:text="${r.distanciaTotalKm != null ? r.distanciaTotalKm + ' km' : '-'}">24.5 km</div>
+                            <div style="font-size: 11px; color: var(--text-muted);" th:text="${r.tiempoEstimadoMinutos != null ? r.tiempoEstimadoMinutos + ' min aprox.' : '-'}">45 min aprox.</div>
+                        </td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${r.estado == 'ASIGNADA' ? 'badge-asignada' : (r.estado == 'EN_CURSO' ? 'badge-en_curso' : 'badge-completada')}"
+                                  th:text="${r.estado}">ASIGNADA</span>
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                                <button type="button" class="btn btn-info" th:onclick="'verRutaEnMapa(' + ${r.id} + ')'">
+                                    <i class="fa-solid fa-eye"></i> Ver en Mapa
+                                </button>
+                                <form th:if="${r.estado == 'ASIGNADA'}"
+                                      th:action="@{/admin/rutas/cancelar/{id}(id=${r.id})}"
+                                      method="post"
+                                      onsubmit="return confirm('¿Cancelar esta ruta? Las guías volverán a estar disponibles para replanificar.');">
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fa-solid fa-trash-can"></i> Cancelar
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Estado del planificador
+        const map = L.map('map').setView([4.6097, -74.0817], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        const markersLayer = L.layerGroup().addTo(map);
+        let routePolylineLayer = null;
+
+        let estadoPlan = {
+            tipo: 'ENTREGA',
+            repartidorId: null,
+            tieneRutaActiva: false,
+            paradas: [], // { guiaId, destinatario, direccionRecibo, ciudadDestino, departamentoDestino, pesoKg, lat, lon, geoStatus, incluida, ciudadLat, ciudadLon }
+            coordsEditadas: {}, // guiaId -> { lat, lon }
+            trazadoValido: false,
+            distanciaKm: null,
+            tiempoMin: null,
+            geometriaJson: null,
+            modoInspeccion: false
+        };
+
+        const geoCache = {};
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function mostrarFeedback(tipo, mensaje) {
+            const box = document.getElementById('plannerFeedback');
+            box.className = 'alert alert-' + tipo;
+            const icon = tipo === 'success' ? 'fa-circle-check' :
+                         tipo === 'warning' ? 'fa-triangle-exclamation' :
+                         tipo === 'error' ? 'fa-circle-xmark' : 'fa-circle-info';
+            box.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${escapeHtml(mensaje)}</span>`;
+            box.style.display = 'flex';
+        }
+
+        function ocultarFeedback() {
+            document.getElementById('plannerFeedback').style.display = 'none';
+        }
+
+        function obtenerHubActual() {
+            const sel = document.getElementById('capitalHubSelect');
+            const opt = sel.options[sel.selectedIndex];
+            return {
+                nombre: sel.value || 'BOGOTÁ',
+                lat: parseFloat(opt.dataset.lat || '4.6097'),
+                lon: parseFloat(opt.dataset.lon || '-74.0817')
+            };
+        }
+
+        function limpiarTrazado() {
+            estadoPlan.trazadoValido = false;
+            estadoPlan.distanciaKm = null;
+            estadoPlan.tiempoMin = null;
+            estadoPlan.geometriaJson = null;
+            if (routePolylineLayer) {
+                map.removeLayer(routePolylineLayer);
+                routePolylineLayer = null;
+            }
+            document.getElementById('routeMetrics').style.display = 'none';
+            actualizarBotones();
+        }
+
+        function actualizarBotones() {
+            const activas = estadoPlan.paradas.filter(p => p.incluida);
+            const hayParadasListas = activas.length > 0 && activas.every(p => p.lat !== null && p.lon !== null);
+            const faltanGeo = estadoPlan.paradas.some(p => p.geoStatus === 'approx');
+
+            document.getElementById('btnOptimizar').disabled = !hayParadasListas || estadoPlan.modoInspeccion;
+            document.getElementById('btnManual').disabled = !hayParadasListas || estadoPlan.modoInspeccion;
+            document.getElementById('btnRegeocodificar').disabled = estadoPlan.paradas.length === 0 || (!faltanGeo && activas.length === 0);
+
+            const puedeConfirmar = !estadoPlan.modoInspeccion
+                && estadoPlan.repartidorId !== null
+                && !estadoPlan.tieneRutaActiva
+                && activas.length > 0
+                && estadoPlan.trazadoValido;
+            document.getElementById('btnConfirmarRuta').disabled = !puedeConfirmar;
+        }
+
+        function alCambiarTipoRuta() {
+            estadoPlan.tipo = document.getElementById('tipoRutaSelect').value || 'ENTREGA';
+            document.getElementById('stopsHeaderLabel').textContent =
+                estadoPlan.tipo === 'RECOGIDA' ? '4. Paradas de Recogida' : '4. Paradas de Entrega';
+            const repId = document.getElementById('repartidorSelect').value;
+            cargarDatosRepartidor(repId);
+        }
+
+        function filtrarHubsPorRegion(capitalesRegion) {
+            const hubSelect = document.getElementById('capitalHubSelect');
+            const permitidas = Array.isArray(capitalesRegion) && capitalesRegion.length > 0
+                ? new Set(capitalesRegion.map(c => c.toUpperCase())) : null;
+            Array.from(hubSelect.options).forEach(opt => {
+                const ok = !permitidas || permitidas.has((opt.value || '').toUpperCase());
+                opt.hidden = !ok;
+                opt.disabled = !ok;
+            });
+            if (permitidas && !permitidas.has((hubSelect.value || '').toUpperCase())) {
+                const firstOk = Array.from(hubSelect.options).find(o => !o.disabled);
+                if (firstOk) hubSelect.value = firstOk.value;
+            }
+        }
+
+        async function cargarDatosRepartidor(repartidorId) {
+            ocultarFeedback();
+            limpiarTrazado();
+            estadoPlan.modoInspeccion = false;
+            estadoPlan.coordsEditadas = {};
+            document.getElementById('btnVolverPlanificador').style.display = 'none';
+            document.getElementById('mapModeTitle').textContent = 'Vista Previa del Trazado Vial';
+
+            const tipo = document.getElementById('tipoRutaSelect').value || 'ENTREGA';
+            estadoPlan.tipo = tipo;
+            document.getElementById('stopsHeaderLabel').textContent =
+                tipo === 'RECOGIDA' ? '4. Paradas de Recogida' : '4. Paradas de Entrega';
+
+            if (!repartidorId) {
+                estadoPlan.repartidorId = null;
+                estadoPlan.paradas = [];
+                estadoPlan.tieneRutaActiva = false;
+                filtrarHubsPorRegion(null);
+                document.getElementById('vanSummary').style.display = 'none';
+                document.getElementById('rutaActivaWarning').style.display = 'none';
+                renderStops();
+                renderMapaPlan();
+                return;
+            }
+
+            try {
+                const resp = await fetch(`/admin/rutas/datos-repartidor/${encodeURIComponent(repartidorId)}?tipo=${encodeURIComponent(tipo)}`);
+                const data = await resp.json();
+                if (!resp.ok) {
+                    mostrarFeedback('error', data.error || 'Error cargando datos del repartidor.');
+                    return;
+                }
+
+                estadoPlan.repartidorId = data.repartidorId;
+                estadoPlan.tieneRutaActiva = Boolean(data.tieneRutaActiva);
+
+                // Furgoneta
+                document.getElementById('vanModelText').textContent = data.vehiculoModelo || 'Furgoneta';
+                document.getElementById('vanPlacaBadge').textContent = data.vehiculoPlaca || '-';
+                document.getElementById('vanLoadText').textContent = (data.pesoCargadoKg ?? 0) + ' kg';
+                document.getElementById('vanCapText').textContent = (data.capacidadPesoKg ?? 0) + ' kg';
+                document.getElementById('vanRegionText').textContent = data.regionOperacion || '⚠ Sin región asignada';
+                document.getElementById('vanSummary').style.display = 'block';
+
+                filtrarHubsPorRegion(data.capitalesRegion);
+
+                // Ruta activa warning
+                const warnBox = document.getElementById('rutaActivaWarning');
+                if (data.tieneRutaActiva) {
+                    document.getElementById('rutaActivaWarningText').textContent =
+                        `Este repartidor ya tiene la ruta #R-${data.rutaActivaId} (${data.estadoRutaActiva}). Cancela esa ruta abajo si deseas planificar una nueva.`;
+                    warnBox.style.display = 'flex';
+                } else if (!data.regionOperacion) {
+                    document.getElementById('rutaActivaWarningText').textContent =
+                        'Este repartidor no tiene región de operación. Asígnala en Administración de Usuarios para limitar sus rutas.';
+                    warnBox.style.display = 'flex';
+                } else {
+                    warnBox.style.display = 'none';
+                }
+
+                // Seleccionar Hub sugerido
+                const hubSelect = document.getElementById('capitalHubSelect');
+                if (data.capitalSugerida) {
+                    for (const opt of hubSelect.options) {
+                        if (opt.value === data.capitalSugerida) {
+                            hubSelect.value = opt.value;
+                            break;
+                        }
+                    }
+                }
+
+                // Preparar paradas
+                estadoPlan.paradas = (data.paradas || []).map(p => {
+                    const tieneCoords = p.latDestino !== null && p.lonDestino !== null;
+                    return {
+                        guiaId: p.guiaId,
+                        destinatario: p.destinatario,
+                        direccionRecibo: p.direccionRecibo,
+                        ciudadDestino: p.ciudadDestino,
+                        departamentoDestino: p.departamentoDestino,
+                        pesoKg: p.pesoKg,
+                        lat: tieneCoords ? p.latDestino : p.ciudadLat,
+                        lon: tieneCoords ? p.lonDestino : p.ciudadLon,
+                        ciudadLat: p.ciudadLat,
+                        ciudadLon: p.ciudadLon,
+                        geoStatus: tieneCoords ? 'exact' : 'loading',
+                        incluida: true
+                    };
+                });
+
+                renderStops();
+                renderMapaPlan();
+
+                if (estadoPlan.paradas.some(p => p.geoStatus === 'loading')) {
+                    await geocodificarPendientes();
+                } else {
+                    actualizarBotones();
+                }
+            } catch (e) {
+                mostrarFeedback('error', 'No se pudo consultar la información del repartidor.');
+            }
+        }
+
+        async function geocodificarPendientes() {
+            for (const p of estadoPlan.paradas) {
+                if (p.geoStatus !== 'loading') continue;
+                await geocodificarParada(p);
+                renderStops();
+                renderMapaPlan();
+                await new Promise(r => setTimeout(r, 350));
+            }
+            actualizarBotones();
+        }
+
+        async function regeocodificarFaltantes() {
+            for (const p of estadoPlan.paradas) {
+                if (p.geoStatus === 'approx') {
+                    p.geoStatus = 'loading';
+                }
+            }
+            renderStops();
+            await geocodificarPendientes();
+        }
+
+        async function geocodificarParada(p) {
+            const direccion = (p.direccionRecibo || '').trim();
+            const ciudad = (p.ciudadDestino || '').trim();
+            const depto = (p.departamentoDestino || '').trim();
+            const queries = [];
+            if (direccion && ciudad) queries.push(`${direccion}, ${ciudad}, ${depto}, Colombia`);
+            if (ciudad) queries.push(`${ciudad}, ${depto}, Colombia`);
+
+            for (let i = 0; i < queries.length; i++) {
+                const q = queries[i];
+                if (geoCache[q]) {
+                    p.lat = geoCache[q].lat;
+                    p.lon = geoCache[q].lon;
+                    p.geoStatus = i === 0 ? 'osm' : 'approx';
+                    estadoPlan.coordsEditadas[p.guiaId] = { lat: p.lat, lon: p.lon };
+                    return;
+                }
+                try {
+                    const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=co&limit=1&q=${encodeURIComponent(q)}`;
+                    const res = await fetch(url);
+                    if (res.ok) {
+                        const arr = await res.json();
+                        if (arr && arr.length > 0) {
+                            const lat = parseFloat(arr[0].lat);
+                            const lon = parseFloat(arr[0].lon);
+                            if (Number.isFinite(lat) && Number.isFinite(lon)) {
+                                geoCache[q] = { lat, lon };
+                                p.lat = lat;
+                                p.lon = lon;
+                                p.geoStatus = i === 0 ? 'osm' : 'approx';
+                                estadoPlan.coordsEditadas[p.guiaId] = { lat, lon };
+                                return;
+                            }
+                        }
+                    }
+                } catch (_) {
+                    // Continua al respaldo
+                }
+            }
+
+            // Respaldo al centro urbano / regional precalculado
+            p.lat = p.ciudadLat;
+            p.lon = p.ciudadLon;
+            p.geoStatus = 'approx';
+            estadoPlan.coordsEditadas[p.guiaId] = { lat: p.lat, lon: p.lon };
+        }
+
+        function alCambiarHub() {
+            limpiarTrazado();
+            if (!estadoPlan.modoInspeccion) {
+                renderMapaPlan();
+            }
+        }
+
+        function toggleParada(idx) {
+            estadoPlan.paradas[idx].incluida = !estadoPlan.paradas[idx].incluida;
+            limpiarTrazado();
+            renderStops();
+            renderMapaPlan();
+        }
+
+        function moverParada(idx, delta) {
+            const target = idx + delta;
+            if (target < 0 || target >= estadoPlan.paradas.length) return;
+            const tmp = estadoPlan.paradas[idx];
+            estadoPlan.paradas[idx] = estadoPlan.paradas[target];
+            estadoPlan.paradas[target] = tmp;
+            limpiarTrazado();
+            renderStops();
+            renderMapaPlan();
+        }
+
+        function enfocarParada(idx) {
+            const p = estadoPlan.paradas[idx];
+            if (p && p.lat !== null && p.lon !== null) {
+                map.setView([p.lat, p.lon], 14);
+            }
+        }
+
+        function renderStops() {
+            const container = document.getElementById('stopsContainer');
+            const activasCount = estadoPlan.paradas.filter(p => p.incluida).length;
+            document.getElementById('stopsCount').textContent = `${activasCount}/${estadoPlan.paradas.length}`;
+
+            if (estadoPlan.paradas.length === 0) {
+                container.innerHTML = `<div style="text-align: center; padding: 24px 10px; color: var(--text-muted); font-size: 12px;">
+                    <i class="fa-solid fa-box-open" style="font-size: 26px; opacity: 0.35; display: block; margin-bottom: 8px;"></i>
+                    ${estadoPlan.repartidorId ? 'Este repartidor no tiene guías pendientes por enrutar.' : 'Selecciona un repartidor para cargar sus guías pendientes de ruta.'}
+                </div>`;
+                actualizarBotones();
+                return;
+            }
+
+            let ordenVisible = 0;
+            container.innerHTML = estadoPlan.paradas.map((p, idx) => {
+                const badgeNum = p.incluida ? (++ordenVisible) : '–';
+                const geoPillClass = p.geoStatus === 'exact' ? 'geo-exact' :
+                                     p.geoStatus === 'osm' ? 'geo-osm' :
+                                     p.geoStatus === 'loading' ? 'geo-loading' : 'geo-approx';
+                const geoLabel = p.geoStatus === 'exact' ? 'GPS guardado' :
+                                 p.geoStatus === 'osm' ? 'Dirección geocodificada' :
+                                 p.geoStatus === 'loading' ? 'Ubicando...' : 'Centro ciudad (aprox.)';
+
+                return `
+                    <div class="stop-item ${p.incluida ? '' : 'excluded'}">
+                        <input type="checkbox" ${p.incluida ? 'checked' : ''} onchange="toggleParada(${idx})" title="Incluir en la ruta">
+                        <div class="stop-order">${badgeNum}</div>
+                        <div class="stop-body" onclick="enfocarParada(${idx})" style="cursor:pointer;">
+                            <div class="stop-top">
+                                <span>#${escapeHtml(p.guiaId)} · ${escapeHtml(p.destinatario)}</span>
+                                <span style="font-weight: 600; color: var(--text-muted);">${escapeHtml(p.pesoKg)} kg</span>
+                            </div>
+                            <div class="stop-addr">${escapeHtml(p.direccionRecibo)} — ${escapeHtml(p.ciudadDestino)}</div>
+                            <div class="stop-meta">
+                                <span class="geo-pill ${geoPillClass}">${geoLabel}</span>
+                            </div>
+                        </div>
+                        <div class="stop-actions">
+                            <button type="button" class="btn-mini" onclick="moverParada(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} title="Subir parada"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button type="button" class="btn-mini" onclick="moverParada(${idx}, 1)" ${idx === estadoPlan.paradas.length - 1 ? 'disabled' : ''} title="Bajar parada"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            actualizarBotones();
+        }
+
+        function crearIconoNumero(texto, clase) {
+            return L.divIcon({
+                className: '',
+                html: `<div class="marker-pin ${clase}">${escapeHtml(texto)}</div>`,
+                iconSize: clase === 'marker-hub' ? [34, 34] : [28, 28],
+                iconAnchor: clase === 'marker-hub' ? [17, 17] : [14, 14]
+            });
+        }
+
+        function renderMapaPlan() {
+            markersLayer.clearLayers();
+            const bounds = [];
+
+            const hub = obtenerHubActual();
+            const hubMarker = L.marker([hub.lat, hub.lon], { icon: crearIconoNumero('0', 'marker-hub') })
+                .bindPopup(`<strong>🏢 HUB SALIDA: ${escapeHtml(hub.nombre)}</strong><br>Punto 0 de despacho`)
+                .addTo(markersLayer);
+            bounds.push([hub.lat, hub.lon]);
+
+            let num = 0;
+            estadoPlan.paradas.forEach((p, idx) => {
+                if (!p.incluida || p.lat === null || p.lon === null) return;
+                num++;
+                const m = L.marker([p.lat, p.lon], {
+                    icon: crearIconoNumero(String(num), 'marker-stop'),
+                    draggable: true
+                }).bindPopup(`<strong>Parada #${num} — Guía #${escapeHtml(p.guiaId)}</strong><br>${escapeHtml(p.destinatario)}<br>${escapeHtml(p.direccionRecibo)} (${escapeHtml(p.ciudadDestino)})<br><small>Arrastra el pin si deseas corregir el punto</small>`)
+                  .addTo(markersLayer);
+
+                m.on('dragend', function(ev) {
+                    const pos = ev.target.getLatLng();
+                    estadoPlan.paradas[idx].lat = pos.lat;
+                    estadoPlan.paradas[idx].lon = pos.lng;
+                    estadoPlan.paradas[idx].geoStatus = 'exact';
+                    estadoPlan.coordsEditadas[p.guiaId] = { lat: pos.lat, lon: pos.lng };
+                    limpiarTrazado();
+                    renderStops();
+                });
+
+                bounds.push([p.lat, p.lon]);
+            });
+
+            if (bounds.length === 1) {
+                map.setView(bounds[0], 11);
+            } else if (bounds.length > 1) {
+                map.fitBounds(bounds, { padding: [45, 45] });
+            }
+        }
+
+        async function trazarRutaOSRM(optimizar) {
+            ocultarFeedback();
+            const activas = estadoPlan.paradas.filter(p => p.incluida && p.lat !== null && p.lon !== null);
+            if (activas.length === 0) {
+                mostrarFeedback('warning', 'Selecciona al menos una parada con coordenadas válidas.');
+                return;
+            }
+
+            const hub = obtenerHubActual();
+            const puntos = [{ lat: hub.lat, lon: hub.lon }, ...activas];
+            const coordStr = puntos.map(pt => `${pt.lon},${pt.lat}`).join(';');
+
+            const endpoint = optimizar
+                ? `https://router.project-osrm.org/trip/v1/driving/${coordStr}?source=first&roundtrip=false&overview=full&geometries=geojson`
+                : `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson`;
+
+            const btnOpt = document.getElementById('btnOptimizar');
+            const btnMan = document.getElementById('btnManual');
+            btnOpt.disabled = true;
+            btnMan.disabled = true;
+
+            try {
+                const res = await fetch(endpoint);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+
+                let rutaObj = null;
+                let ordenFinalActivas = [...activas];
+
+                if (optimizar) {
+                    if (data.code !== 'Ok' || !data.trips || !data.trips.length) {
+                        throw new Error('OSRM Trip sin resultado');
+                    }
+                    rutaObj = data.trips[0];
+                    if (Array.isArray(data.waypoints) && data.waypoints.length === puntos.length) {
+                        const indicesParadas = activas.map((_, idx) => idx + 1);
+                        indicesParadas.sort((a, b) => data.waypoints[a].waypoint_index - data.waypoints[b].waypoint_index);
+                        ordenFinalActivas = indicesParadas.map(i => activas[i - 1]);
+                        const excluidas = estadoPlan.paradas.filter(p => !p.incluida);
+                        estadoPlan.paradas = [...ordenFinalActivas, ...excluidas];
+                        renderStops();
+                        renderMapaPlan();
+                    }
+                } else {
+                    if (data.code !== 'Ok' || !data.routes || !data.routes.length) {
+                        throw new Error('OSRM Route sin resultado');
+                    }
+                    rutaObj = data.routes[0];
+                }
+
+                aplicarResultadoTrazado(
+                    +(rutaObj.distance / 1000).toFixed(2),
+                    Math.max(1, Math.round(rutaObj.duration / 60)),
+                    rutaObj.geometry,
+                    ordenFinalActivas,
+                    hub.nombre,
+                    false
+                );
+                mostrarFeedback('success', optimizar
+                    ? 'Orden optimizado y ruta vial trazada por OSRM. Revisa el mapa y confirma para asignar.'
+                    : 'Ruta vial trazada en el orden seleccionado. Revisa el mapa y confirma para asignar.');
+            } catch (err) {
+                // Respaldo geométrico si el servidor público OSRM no responde o no hay internet
+                const respaldo = construirRespaldoVial(hub, activas);
+                aplicarResultadoTrazado(
+                    respaldo.km,
+                    respaldo.min,
+                    respaldo.geometry,
+                    activas,
+                    hub.nombre,
+                    true
+                );
+                mostrarFeedback('warning', 'El servidor público OSRM no respondió; se generó un trazado vial de respaldo para no bloquear el despacho.');
+            }
+        }
+
+        function haversineKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2
+                + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function construirRespaldoVial(hub, activas) {
+            const coords = [[hub.lon, hub.lat], ...activas.map(p => [p.lon, p.lat])];
+            let dist = 0;
+            for (let i = 1; i < coords.length; i++) {
+                dist += haversineKm(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]) * 1.28;
+            }
+            const km = +dist.toFixed(2);
+            const min = Math.max(5, Math.round((km / 40) * 60));
+            return {
+                km,
+                min,
+                geometry: { type: 'LineString', coordinates: coords }
+            };
+        }
+
+        function aplicarResultadoTrazado(km, min, geoJsonGeometry, paradasActivas, hubNombre, esRespaldo) {
+            if (routePolylineLayer) {
+                map.removeLayer(routePolylineLayer);
+            }
+            routePolylineLayer = L.geoJSON(geoJsonGeometry, {
+                style: {
+                    color: esRespaldo ? '#F59E0B' : '#0284C7',
+                    weight: 5,
+                    opacity: 0.88,
+                    dashArray: esRespaldo ? '8, 8' : null
+                }
+            }).addTo(map);
+            map.fitBounds(routePolylineLayer.getBounds(), { padding: [45, 45] });
+
+            estadoPlan.trazadoValido = true;
+            estadoPlan.distanciaKm = km;
+            estadoPlan.tiempoMin = min;
+            estadoPlan.geometriaJson = JSON.stringify(geoJsonGeometry);
+
+            document.getElementById('metricKm').textContent = km + ' km';
+            document.getElementById('metricMin').textContent = min + ' min';
+            document.getElementById('metricStops').textContent = String(paradasActivas.length);
+            document.getElementById('routeMetrics').style.display = 'grid';
+
+            // Llenar formulario oculto
+            const coordsParaPersistir = {};
+            paradasActivas.forEach(p => {
+                coordsParaPersistir[p.guiaId] = { lat: p.lat, lon: p.lon };
+            });
+            document.getElementById('formRepartidorId').value = estadoPlan.repartidorId;
+            document.getElementById('formTipo').value = estadoPlan.tipo || 'ENTREGA';
+            document.getElementById('formCapitalHub').value = hubNombre;
+            document.getElementById('formGuiaIdsJson').value = JSON.stringify(paradasActivas.map(p => p.guiaId));
+            document.getElementById('formCoordenadasJson').value = JSON.stringify(coordsParaPersistir);
+            document.getElementById('formDistanciaTotalKm').value = km;
+            document.getElementById('formTiempoEstimadoMinutos').value = min;
+            document.getElementById('formGeometriaJson').value = estadoPlan.geometriaJson;
+
+            actualizarBotones();
+        }
+
+        async function verRutaEnMapa(rutaId) {
+            try {
+                const res = await fetch(`/admin/rutas/detalle/${encodeURIComponent(rutaId)}`);
+                const data = await res.json();
+                if (!res.ok) {
+                    mostrarFeedback('error', data.error || 'No se pudo cargar el detalle de la ruta.');
+                    return;
+                }
+
+                estadoPlan.modoInspeccion = true;
+                document.getElementById('btnVolverPlanificador').style.display = 'inline-flex';
+                document.getElementById('mapModeTitle').textContent =
+                    `Inspeccionando Ruta ${data.tipo || 'ENTREGA'} #R-${data.id} — ${data.repartidorNombre} (${data.estado})`;
+                actualizarBotones();
+
+                markersLayer.clearLayers();
+                if (routePolylineLayer) {
+                    map.removeLayer(routePolylineLayer);
+                    routePolylineLayer = null;
+                }
+
+                const bounds = [];
+                if (data.hubLat !== null && data.hubLon !== null) {
+                    L.marker([data.hubLat, data.hubLon], { icon: crearIconoNumero('0', 'marker-hub') })
+                        .bindPopup(`<strong>🏢 HUB: ${escapeHtml(data.capitalHub)}</strong>`)
+                        .addTo(markersLayer);
+                    bounds.push([data.hubLat, data.hubLon]);
+                }
+
+                (data.paradas || []).forEach((p, idx) => {
+                    const lat = p.latDestino ?? p.ciudadLat;
+                    const lon = p.lonDestino ?? p.ciudadLon;
+                    if (lat === null || lon === null) return;
+                    const num = p.ordenEntrega || (idx + 1);
+                    L.marker([lat, lon], { icon: crearIconoNumero(String(num), 'marker-stop') })
+                        .bindPopup(`<strong>Parada #${num} — Guía #${escapeHtml(p.guiaId)}</strong><br>${escapeHtml(p.destinatario)}<br>${escapeHtml(p.direccionRecibo)} (${escapeHtml(p.ciudadDestino)})`)
+                        .addTo(markersLayer);
+                    bounds.push([lat, lon]);
+                });
+
+                if (data.geometriaJson) {
+                    const geom = JSON.parse(data.geometriaJson);
+                    routePolylineLayer = L.geoJSON(geom, {
+                        style: { color: '#0284C7', weight: 5, opacity: 0.9 }
+                    }).addTo(map);
+                    map.fitBounds(routePolylineLayer.getBounds(), { padding: [45, 45] });
+                } else if (bounds.length > 0) {
+                    map.fitBounds(bounds, { padding: [45, 45] });
+                }
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (e) {
+                mostrarFeedback('error', 'No se pudo dibujar la ruta seleccionada.');
+            }
+        }
+
+        function volverModoPlanificacion() {
+            estadoPlan.modoInspeccion = false;
+            document.getElementById('btnVolverPlanificador').style.display = 'none';
+            document.getElementById('mapModeTitle').textContent = 'Vista Previa del Trazado Vial';
+            renderMapaPlan();
+            if (estadoPlan.trazadoValido && estadoPlan.geometriaJson) {
+                routePolylineLayer = L.geoJSON(JSON.parse(estadoPlan.geometriaJson), {
+                    style: { color: '#0284C7', weight: 5, opacity: 0.88 }
+                }).addTo(map);
+                map.fitBounds(routePolylineLayer.getBounds(), { padding: [45, 45] });
+            }
+            actualizarBotones();
+        }
+    </script>
+</body>
+</html>
+

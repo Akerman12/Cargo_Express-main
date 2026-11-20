@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}"/>
+    <title>Módulo de Reparto | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="icon" type="image/jpg" th:href="@{/imagenes/LOGO Cargo Expres.jpg}">
+
+    <style>
+        :root {
+            --gls-blue: #002855;
+            --gls-yellow: #FF6600;
+            --brand-orange: #FF6600;
+            --bg-dark: #0f172a;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            padding-bottom: 90px;
+        }
+
+        header {
+            background: var(--gls-blue);
+            color: white;
+            padding: 16px 18px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        header h1 { font-size: 17px; font-weight: 800; letter-spacing: 0.8px; }
+        .van-pill {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+            padding: 4px 12px; border-radius: 50px; font-size: 11px; font-weight: 700; margin-top: 6px;
+        }
+
+        .container { padding: 15px; max-width: 720px; margin: 0 auto; }
+
+        /* --- Control de Ruta Card --- */
+        .route-control-card {
+            background: white;
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+            border: 2px solid var(--gls-blue);
+        }
+        .route-summary-strip {
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;
+            font-size: 12px; text-align: left;
+        }
+        .route-badge {
+            padding: 3px 9px; border-radius: 50px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+        }
+        .route-badge-asignada { background: #dbeafe; color: #1e40af; }
+        .route-badge-en_curso { background: #fef3c7; color: #92400e; }
+
+        .btn-route-main {
+            width: 100%; padding: 14px; border-radius: 12px; background: var(--success); color: white; border: none;
+            font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+            display: flex; justify-content: center; align-items: center; gap: 10px; transition: 0.25s;
+        }
+        .btn-route-map-toggle {
+            width: 100%; padding: 12px; border-radius: 12px; margin-top: 10px;
+            background: #eff6ff; color: var(--gls-blue); border: 1.5px solid #bfdbfe;
+            font-weight: 800; font-size: 13px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .btn-route-map-toggle:hover { background: #dbeafe; }
+
+        #mapaRutaAsignadaBox {
+            display: none;
+            margin-top: 14px;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 14px;
+        }
+        #driverRouteMap {
+            width: 100%;
+            height: 310px;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            z-index: 1;
+        }
+        .map-subactions {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;
+        }
+
+        .marker-pin { border-radius: 50%; color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.35); font-size: 11px; }
+        .marker-hub { background: var(--brand-orange); width: 30px; height: 30px; }
+        .marker-stop { background: var(--gls-blue); width: 26px; height: 26px; }
+        .marker-stop-done { background: var(--success); width: 26px; height: 26px; }
+        .marker-stop-novedad { background: var(--danger); width: 26px; height: 26px; }
+        .driver-gps-dot { width: 18px; height: 18px; background: #2563eb; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(37,99,235,0.75); }
+
+        /* --- Tabs & Region Filter --- */
+        .tabs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .tab-btn {
+            padding: 12px 10px; border-radius: 12px; border: 1.5px solid #cbd5e1; background: white;
+            font-weight: 800; font-size: 12px; color: var(--text-muted); cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;
+        }
+        .tab-btn.active { background: var(--gls-blue); color: white; border-color: var(--gls-blue); box-shadow: 0 4px 10px rgba(0,46,125,0.2); }
+
+        .filter-bar {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+            background: white; padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0;
+        }
+        .filter-bar label { font-size: 11px; font-weight: 800; color: var(--text-muted); white-space: nowrap; }
+        .filter-bar select { flex: 1; padding: 7px 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 12px; font-weight: 600; background: #f8fafc; }
+
+        /* --- Delivery Cards --- */
+        .delivery-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-left: 6px solid var(--warning);
+            transition: 0.3s;
+        }
+        .delivery-card.in-transit { border-left-color: #3b82f6; }
+        .delivery-card.has-novedad { border-left-color: var(--danger); }
+
+        .card-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .tracking-id { font-weight: 800; color: var(--gls-blue); font-size: 13px; background: #f0f4ff; padding: 4px 9px; border-radius: 6px; }
+        .stop-num-pill { font-weight: 800; color: white; background: var(--brand-orange); font-size: 11px; padding: 4px 9px; border-radius: 50px; }
+        .status-badge { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 50px; background: #fff7ed; color: #9a3412; }
+        .status-badge.novedad { background: #fee2e2; color: #991b1b; }
+        .status-badge.transito { background: #dbeafe; color: #1e40af; }
+
+        .info-box { background: #f8fafc; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+        .recipient-name { font-size: 15px; font-weight: 800; color: var(--text-main); margin-bottom: 3px; }
+        .recipient-addr { font-size: 12px; color: var(--text-muted); display: flex; align-items: flex-start; gap: 6px; line-height: 1.4; }
+
+        .novedad-alert { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 8px 10px; font-size: 11px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
+        .nav-links-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+        .btn-nav {
+            padding: 8px 6px; border-radius: 9px; text-decoration: none; font-size: 11px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid #e2e8f0;
+            background: #f8fafc; color: #334155;
+        }
+        .btn-gmaps { color: #0f766e; background: #f0fdfa; border-color: #99f6e4; }
+        .btn-waze { color: #0369a1; background: #f0f9ff; border-color: #bae6fd; }
+
+        .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-action {
+            padding: 11px 10px; border: none; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; text-decoration: none;
+        }
+        .btn-transit { background: #eff6ff; color: #1e40af; }
+        .btn-novedad { background: #fef2f2; color: #b91c1c; }
+        .btn-deliver { background: var(--success); color: white; grid-column: span 2; }
+        .btn-pickup { background: var(--gls-blue); color: white; grid-column: span 2; }
+
+        /* --- Modals --- */
+        .modal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            z-index: 1000; align-items: flex-end; justify-content: center;
+        }
+        .modal-content {
+            background: white; width: 100%; max-width: 600px; border-radius: 24px 24px 0 0;
+            padding: 26px 20px; animation: slideUp 0.25s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-header { text-align: center; margin-bottom: 16px; }
+        .modal-header h2 { font-size: 19px; font-weight: 800; color: var(--gls-blue); }
+
+        #signature-pad {
+            border: 2px dashed #cbd5e1; border-radius: 12px; width: 100%; height: 190px;
+            background: #f8fafc; touch-action: none;
+        }
+        .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+        .m-btn { flex: 1; padding: 13px; border-radius: 12px; font-weight: 800; border: none; cursor: pointer; font-size: 13px; }
+        .m-clear { background: #f1f5f9; color: var(--text-muted); }
+        .m-confirm { background: var(--gls-blue); color: white; }
+        .m-danger { background: var(--danger); color: white; }
+
+        .preset-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .chip-btn {
+            padding: 6px 10px; border-radius: 50px; border: 1px solid #cbd5e1; background: #f8fafc;
+            font-size: 11px; font-weight: 600; cursor: pointer; color: var(--text-main);
+        }
+        .chip-btn:hover { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+
+        .form-group { margin-top: 12px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 800; margin-bottom: 5px; color: var(--text-muted); }
+        .form-group textarea { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid #cbd5e1; resize: none; font-size: 13px; font-family: inherit; }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around;
+            padding: 13px; border-top: 1px solid #e2e8f0; z-index: 200;
+        }
+        .nav-item { text-align: center; color: var(--text-muted); text-decoration: none; font-size: 10px; font-weight: 700; }
+        .nav-item i { font-size: 19px; display: block; margin-bottom: 3px; }
+        .nav-item.active { color: var(--gls-blue); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); background: white; border-radius: 16px; }
+        .empty-state i { font-size: 42px; margin-bottom: 14px; opacity: 0.3; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>CENTRO DE REPARTO SAI</h1>
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+            <div th:if="${regionRepartidor != null}" class="van-pill">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span th:text="${regionRepartidor}">Región</span>
+            </div>
+            <div th:if="${vehiculo != null}" class="van-pill">
+                <i class="fa-solid fa-truck"></i>
+                <span th:text="${vehiculo.placa} + ' · ' + ${vehiculo.modelo}">ABC-123 · Furgoneta</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Ventana de Control y Empezar Ruta -->
+        <div class="route-control-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="font-size: 14px; font-weight: 800; color: var(--gls-blue);">
+                    <i class="fa-solid fa-route" style="color: var(--brand-orange);"></i> CONTROL Y SEGUIMIENTO DE RUTA
+                </h3>
+                <span th:if="${rutaActiva != null}" id="rutaEstadoBadge"
+                      th:class="'route-badge ' + (${rutaActiva.estado == 'EN_CURSO'} ? 'route-badge-en_curso' : 'route-badge-asignada')"
+                      th:text="${rutaActiva.estado}">ASIGNADA</span>
+            </div>
+
+            <div th:if="${rutaActiva != null}" class="route-summary-strip">
+                <div>
+                    <div style="font-weight: 800; color: var(--gls-blue);"
+                         th:text="'Ruta ' + (${rutaActiva.tipo ?: 'ENTREGA'}) + ' #R-' + ${rutaActiva.id} + ' · Hub ' + ${rutaActiva.capitalHub}">Ruta #R-1 · Hub BOGOTÁ</div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;"
+                         th:text="${rutaActiva.cantidadParadas} + ' parada(s) · ' + (${rutaActiva.distanciaTotalKm ?: 0}) + ' km · ~' + (${rutaActiva.tiempoEstimadoMinutos ?: 0}) + ' min'">
+                        3 paradas · 18.5 km
+                    </div>
+                </div>
+                <div style="font-weight: 800; color: var(--brand-orange); font-size: 12px;"
+                     th:text="${rutaActiva.pesoTotalKg} + ' kg'">25 kg</div>
+            </div>
+
+            <p th:if="${rutaActiva == null}" style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+                Al empezar tu ruta, tu ubicación se transmitirá en vivo a los clientes y al centro de control.
+            </p>
+
+            <button id="btnGlobalTracking" type="button" class="btn-route-main" onclick="manejarEmpezarRuta()">
+                <i class="fa-solid fa-play"></i>
+                <span id="btnEmpezarTexto"
+                      th:text="${rutaActiva != null and rutaActiva.estado == 'EN_CURSO'} ? 'ACTIVAR GPS / RUTA EN CURSO' : 'EMPEZAR RUTA'">EMPEZAR RUTA</span>
+            </button>
+
+            <!-- Opción directa en la ventana de Empezar Ruta para desplegar el mapa de la ruta asignada -->
+            <button th:if="${rutaActiva != null}" id="btnDesplegarMapa" type="button" class="btn-route-map-toggle" onclick="toggleMapaRutaAsignada()">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <span id="btnDesplegarMapaTexto">DESPLEGAR MAPA DE LA RUTA ASIGNADA</span>
+            </button>
+
+            <div id="trackingStatus" style="font-size: 11px; font-weight: 700; color: var(--danger); margin-top: 10px; display: none; text-align: center;">
+                <i class="fa-solid fa-satellite-dish fa-beat"></i> <span id="trackingStatusText">TRANSMITIENDO EN VIVO...</span>
+            </div>
+
+            <!-- Mapa desplegable dentro de la ventana de Empezar Ruta -->
+            <div th:if="${rutaActiva != null}" id="mapaRutaAsignadaBox">
+                <div id="driverRouteMap"></div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                    <span><strong style="color: var(--brand-orange);">● 0</strong> Hub</span>
+                    <span><strong style="color: var(--gls-blue);">● 1..N</strong> Pendiente</span>
+                    <span><strong style="color: var(--success);">● ✓</strong> <span th:text="${rutaActiva.tipo == 'RECOGIDA'} ? 'Recogido / Sucursal' : 'Entregado'">Entregado</span></span>
+                </div>
+                <div class="map-subactions">
+                    <a th:href="@{/reparto/ruta-mapa}" class="btn-action btn-transit" style="text-align: center;">
+                        <i class="fa-solid fa-expand"></i> Pantalla Completa
+                    </a>
+                    <form th:action="@{/reparto/finalizar-ruta}" method="post" onsubmit="return confirmarCierreRuta(this);">
+                        <input type="hidden" name="forzar" value="true">
+                        <button type="submit" class="btn-action btn-novedad" style="width: 100%;">
+                            <i class="fa-solid fa-flag-checkered"></i> Finalizar Ruta
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notificaciones flash -->
+        <div th:if="${mensaje}" style="background: var(--success); color: white; padding: 13px 15px; border-radius: 12px; margin-bottom: 14px; font-size: 13px; font-weight: 700; text-align: center;">
+            <i class="fa-solid fa-circle-check"></i> <span th:text="${mensaje}"></span>
+        </div>
+        <div th:if="${error}" style="background: var(--danger); color: white; padding: 13px 15px; border-radius: 12px; margin-bottom: 14px; font-size: 13px; font-weight: 700; text-align: center;">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span th:text="${error}"></span>
+        </div>
+
+        <!-- Pestañas: Ruta de Entrega vs Ruta de Recogida -->
+        <div class="tabs-row">
+            <button type="button" id="tabEntregaBtn" class="tab-btn active" onclick="cambiarTab('entrega')">
+                <i class="fa-solid fa-truck-fast"></i>
+                <span>Ruta de Entrega (<span th:text="${#lists.size(rutaEntrega)}">0</span>)</span>
+            </button>
+            <button type="button" id="tabRecogidaBtn" class="tab-btn" onclick="cambiarTab('recogida')">
+                <i class="fa-solid fa-boxes-packing"></i>
+                <span>Recogidas (<span th:text="${#lists.size(rutaRecogida)}">0</span>)</span>
+            </button>
+        </div>
+
+        <!-- Filtro Regional -->
+        <div class="filter-bar">
+            <label for="regionFilter"><i class="fa-solid fa-filter"></i> Región:</label>
+            <select id="regionFilter" onchange="filtrarPorRegion()">
+                <option value="TODAS">Todas las regiones</option>
+                <option th:each="reg : ${regionesEntrega}" th:value="${reg}" th:text="${reg}" class="opt-reg-entrega"></option>
+                <option th:each="reg : ${regionesRecogida}" th:value="${reg}" th:text="${reg}" class="opt-reg-recogida" style="display:none;"></option>
+            </select>
+        </div>
+
+        <!-- TAB 1: RUTA DE ENTREGA -->
+        <div id="panelEntrega">
+            <div th:if="${#lists.isEmpty(rutaEntrega)}" class="empty-state">
+                <i class="fa-solid fa-route"></i>
+                <h3>No tienes entregas asignadas</h3>
+                <p style="font-size: 13px; margin-top: 4px;">Cuando el administrador cargue tu ruta o recojas paquetes pendientes, aparecerán aquí.</p>
+            </div>
+
+            <div th:each="guia : ${rutaEntrega}"
+                 th:attr="data-region=${(guia.departamentoDestino != null and !guia.departamentoDestino.isEmpty()) ? guia.departamentoDestino : guia.ciudadDestino}"
+                 th:class="'delivery-card entrega-card ' + (${guia.estado == 'Novedad'} ? 'has-novedad' : (${guia.estado == 'En Tránsito' or guia.estado == 'En tránsito'} ? 'in-transit' : ''))">
+
+                <div class="card-header">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span th:if="${guia.ordenEntrega != null}" class="stop-num-pill"
+                              th:text="'Parada #' + ${guia.ordenEntrega}">Parada #1</span>
+                        <span class="tracking-id" th:text="'SAI-' + ${guia.id}">SAI-1</span>
+                    </div>
+                    <span th:class="'status-badge ' + (${guia.estado == 'Novedad'} ? 'novedad' : (${guia.estado == 'En Tránsito' or guia.estado == 'En tránsito'} ? 'transito' : ''))"
+                          th:text="${guia.estado}">En Tránsito</span>
+                </div>
+
+                <div class="info-box">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+                        <div class="recipient-name" th:text="${guia.destinatario}">Destinatario</div>
+                        <span style="font-size: 11px; font-weight: 700; color: var(--gls-blue);" th:text="${guia.pesoKg} + ' kg'">5 kg</span>
+                    </div>
+                    <div class="recipient-addr">
+                        <i class="fa-solid fa-location-dot" style="color: var(--success); margin-top: 2px;"></i>
+                        <span th:text="${guia.direccionRecibo} + ', ' + ${guia.ciudadDestino} + (${guia.departamentoDestino != null} ? ' (' + ${guia.departamentoDestino} + ')' : '')"></span>
+                    </div>
+                </div>
+
+                <div th:if="${guia.motivoNovedad != null and !guia.motivoNovedad.isEmpty()}" class="novedad-alert">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span th:text="'Novedad registrada: ' + ${guia.motivoNovedad}"></span>
+                </div>
+
+                <div class="nav-links-row">
+                    <a class="btn-nav btn-gmaps" target="_blank" rel="noopener noreferrer"
+                       th:href="${guia.latDestino != null and guia.lonDestino != null}
+                           ? @{https://www.google.com/maps/dir/(api=1,destination=${guia.latDestino + ',' + guia.lonDestino})}
+                           : @{https://www.google.com/maps/search/(api=1,query=${guia.direccionRecibo + ', ' + guia.ciudadDestino + ', Colombia'})}">
+                        <i class="fa-solid fa-diamond-turn-right"></i> Google Maps
+                    </a>
+                    <a class="btn-nav btn-waze" target="_blank" rel="noopener noreferrer"
+                       th:href="${guia.latDestino != null and guia.lonDestino != null}
+                           ? @{https://waze.com/ul(ll=${guia.latDestino + ',' + guia.lonDestino},navigate='yes')}
+                           : @{https://waze.com/ul(q=${guia.direccionRecibo + ', ' + guia.ciudadDestino + ', Colombia'},navigate='yes')}">
+                        <i class="fa-brands fa-waze"></i> Waze
+                    </a>
+                    <a class="btn-nav" th:href="@{/reparto/mapa/{id}(id=${guia.id})}">
+                        <i class="fa-solid fa-map"></i> Mapa Parada
+                    </a>
+                </div>
+
+                <div class="card-actions">
+                    <button th:if="${guia.estado != 'En Tránsito' and guia.estado != 'En tránsito'}"
+                            type="button" class="btn-action btn-transit"
+                            th:onclick="'updateStatus(' + ${guia.id} + ', \'En Tránsito\', false)'">
+                        <i class="fa-solid fa-truck-ramp-box"></i> EN CAMINO
+                    </button>
+                    <button th:if="${guia.estado == 'En Tránsito' or guia.estado == 'En tránsito'}"
+                            type="button" class="btn-action btn-transit" style="background: #dcfce7; color: #166534;" disabled>
+                        <i class="fa-solid fa-road"></i> EN REPARTO
+                    </button>
+                    <button type="button" class="btn-action btn-novedad" th:onclick="'openNovedadModal(' + ${guia.id} + ')'">
+                        <i class="fa-solid fa-triangle-exclamation"></i> NOVEDAD
+                    </button>
+                    <button type="button" class="btn-action btn-deliver" th:onclick="'openDeliveryModal(' + ${guia.id} + ')'">
+                        <i class="fa-solid fa-signature"></i> CONFIRMAR ENTREGA CON FIRMA
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: RUTA DE RECOGIDA -->
+        <div id="panelRecogida" style="display: none;">
+            <div th:if="${#lists.isEmpty(rutaRecogida)}" class="empty-state">
+                <i class="fa-solid fa-box-open"></i>
+                <h3>No tienes recogidas pendientes</h3>
+                <p style="font-size: 13px; margin-top: 4px;">Los paquetes pendientes de recolección en origen aparecerán aquí.</p>
+            </div>
+
+            <div th:each="guia : ${rutaRecogida}"
+                 th:attr="data-region=${(guia.departamentoOrigen != null and !guia.departamentoOrigen.isEmpty()) ? guia.departamentoOrigen : guia.ciudadOrigen}"
+                 class="delivery-card recogida-card">
+
+                <div class="card-header">
+                    <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span th:if="${guia.ordenRecogida != null}" class="stop-num-pill"
+                              th:text="'Parada #' + ${guia.ordenRecogida}">Parada #1</span>
+                        <span class="tracking-id" th:text="'RECOGIDA · SAI-' + ${guia.id}">SAI-1</span>
+                    </div>
+                    <span th:class="'status-badge ' + (${guia.estado == 'No Recogido'} ? 'novedad' : (${guia.estado == 'Recogido'} ? 'transito' : ''))"
+                          th:text="${guia.estado}">Pendiente</span>
+                </div>
+
+                <div class="info-box">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+                        <div class="recipient-name" th:text="${guia.remitente}">Remitente</div>
+                        <span style="font-size: 11px; font-weight: 700; color: var(--gls-blue);" th:text="${guia.pesoKg} + ' kg'">5 kg</span>
+                    </div>
+                    <div class="recipient-addr">
+                        <i class="fa-solid fa-box" style="color: var(--gls-blue); margin-top: 2px;"></i>
+                        <span th:text="${guia.direccionEnvio} + ', ' + ${guia.ciudadOrigen} + (${guia.departamentoOrigen != null} ? ' (' + ${guia.departamentoOrigen} + ')' : '')"></span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                        Destino final: <strong th:text="${guia.ciudadDestino}"></strong>
+                    </div>
+                </div>
+
+                <div th:if="${guia.motivoNovedad != null and !guia.motivoNovedad.isEmpty()}" class="novedad-alert">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span th:text="'Motivo: ' + ${guia.motivoNovedad}"></span>
+                </div>
+
+                <div class="nav-links-row" style="grid-template-columns: 1fr 1fr;">
+                    <a class="btn-nav btn-gmaps" target="_blank" rel="noopener noreferrer"
+                       th:href="${guia.latOrigen != null and guia.lonOrigen != null}
+                           ? @{https://www.google.com/maps/dir/(api=1,destination=${guia.latOrigen + ',' + guia.lonOrigen})}
+                           : @{https://www.google.com/maps/search/(api=1,query=${guia.direccionEnvio + ', ' + guia.ciudadOrigen + ', Colombia'})}">
+                        <i class="fa-solid fa-diamond-turn-right"></i> Google Maps Recogida
+                    </a>
+                    <a class="btn-nav btn-waze" target="_blank" rel="noopener noreferrer"
+                       th:href="${guia.latOrigen != null and guia.lonOrigen != null}
+                           ? @{https://waze.com/ul(ll=${guia.latOrigen + ',' + guia.lonOrigen},navigate='yes')}
+                           : @{https://waze.com/ul(q=${guia.direccionEnvio + ', ' + guia.ciudadOrigen + ', Colombia'},navigate='yes')}">
+                        <i class="fa-brands fa-waze"></i> Waze Recogida
+                    </a>
+                </div>
+
+                <div class="card-actions" th:if="${guia.estado == null or guia.estado == 'Pendiente'}">
+                    <button type="button" class="btn-action btn-pickup" th:onclick="'updateStatus(' + ${guia.id} + ', \'Recogido\', false)'">
+                        <i class="fa-solid fa-people-carry-box"></i> MARCAR RECOGIDO
+                    </button>
+                    <button type="button" class="btn-action btn-novedad" th:onclick="'openNoRecogidoModal(' + ${guia.id} + ')'">
+                        <i class="fa-solid fa-ban"></i> NO RECOGIDO
+                    </button>
+                </div>
+                <div class="card-actions" th:if="${guia.estado == 'Recogido'}">
+                    <button type="button" class="btn-action btn-transit" th:onclick="'updateStatus(' + ${guia.id} + ', \'En Sucursal\', false)'">
+                        <i class="fa-solid fa-warehouse"></i> ENTREGAR EN SUCURSAL
+                    </button>
+                    <button type="button" class="btn-action btn-novedad" th:onclick="'openNoRecogidoModal(' + ${guia.id} + ')'">
+                        <i class="fa-solid fa-ban"></i> NO RECOGIDO
+                    </button>
+                </div>
+                <div class="card-actions" th:if="${guia.estado == 'No Recogido'}">
+                    <button type="button" class="btn-action btn-novedad" style="opacity:0.75;" disabled>
+                        <i class="fa-solid fa-ban"></i> REPORTADO NO RECOGIDO (PENDIENTE REASIGNACIÓN)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Entrega con Firma -->
+    <div id="deliveryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirmar Entrega</h2>
+                <p id="modalTracking" style="font-size: 13px; color: var(--text-muted);"></p>
+            </div>
+
+            <form th:action="@{/reparto/finalizar-entrega}" method="post" id="deliveryForm">
+                <input type="hidden" name="guiaId" id="guiaIdInput">
+                <input type="hidden" name="firma" id="firmaInput">
+
+                <div>
+                    <label style="display: block; font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--text-muted);">FIRMA DEL DESTINATARIO</label>
+                    <canvas id="signature-pad"></canvas>
+                </div>
+
+                <div class="form-group">
+                    <label>NOTAS DE ENTREGA</label>
+                    <textarea name="notas" rows="2" placeholder="Ej: Recibió en portería, casa blanca..."></textarea>
+                </div>
+
+                <div class="modal-btns">
+                    <button type="button" class="m-btn m-clear" onclick="clearSignature()">BORRAR</button>
+                    <button type="button" class="m-btn m-confirm" onclick="submitDelivery()">CONFIRMAR</button>
+                </div>
+            </form>
+
+            <button type="button" onclick="closeModal()" style="width: 100%; background: none; border: none; color: #ef4444; font-weight: 800; margin-top: 16px; font-size: 12px; cursor: pointer;">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- Modal de Reporte de Novedad -->
+    <div id="novedadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="color: #b91c1c;"><i class="fa-solid fa-triangle-exclamation"></i> Reportar Novedad</h2>
+                <p id="modalNovedadTracking" style="font-size: 13px; color: var(--text-muted);"></p>
+            </div>
+
+            <form th:action="@{/reparto/reportar-novedad}" method="post">
+                <input type="hidden" name="guiaId" id="novedadGuiaIdInput">
+
+                <div class="preset-chips">
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivo('Destinatario ausente en domicilio')">Cliente ausente</button>
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivo('Dirección incompleta o errada')">Dirección errada</button>
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivo('Establecimiento o portería cerrada')">Local cerrado</button>
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivo('Cliente rechazó el paquete')">Rechazado</button>
+                </div>
+
+                <div class="form-group">
+                    <label>MOTIVO DETALLADO</label>
+                    <textarea name="motivo" id="novedadMotivoInput" rows="3" required placeholder="Describe la novedad ocurrida en el punto de entrega..."></textarea>
+                </div>
+
+                <div class="modal-btns">
+                    <button type="button" class="m-btn m-clear" onclick="closeNovedadModal()">CANCELAR</button>
+                    <button type="submit" class="m-btn m-danger">GUARDAR NOVEDAD</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de No Recogido en Origen -->
+    <div id="noRecogidoModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="color: #b91c1c;"><i class="fa-solid fa-ban"></i> Paquete No Recogido</h2>
+                <p id="modalNoRecogidoTracking" style="font-size: 13px; color: var(--text-muted);"></p>
+            </div>
+
+            <form th:action="@{/reparto/no-recogido}" method="post">
+                <input type="hidden" name="guiaId" id="noRecogidoGuiaIdInput">
+
+                <div class="preset-chips">
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivoNoRecogido('Remitente ausente en punto de recogida')">Remitente ausente</button>
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivoNoRecogido('Paquete sin empacar o sin etiqueta')">Sin empacar</button>
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivoNoRecogido('Dirección de recogida errada o inaccesible')">Dirección errada</button>
+                    <button type="button" class="chip-btn" onclick="seleccionarMotivoNoRecogido('Cliente canceló la recolección')">Cliente canceló</button>
+                </div>
+
+                <div class="form-group">
+                    <label>MOTIVO DETALLADO</label>
+                    <textarea name="motivo" id="noRecogidoMotivoInput" rows="3" required placeholder="Explica por qué no se pudo recoger el paquete..."></textarea>
+                </div>
+
+                <div class="modal-btns">
+                    <button type="button" class="m-btn m-clear" onclick="closeNoRecogidoModal()">CANCELAR</button>
+                    <button type="submit" class="m-btn m-danger">CONFIRMAR NO RECOGIDO</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a th:href="@{/menu}" class="nav-item"><i class="fa-solid fa-house"></i>Inicio</a>
+        <a th:href="@{/reparto}" class="nav-item active"><i class="fa-solid fa-truck-fast"></i>Repartos</a>
+        <a th:href="@{/guias/mis-guias}" class="nav-item"><i class="fa-solid fa-list-check"></i>Guías</a>
+        <a th:href="@{/usuario/perfil}" class="nav-item"><i class="fa-solid fa-user"></i>Perfil</a>
+    </nav>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script th:inline="javascript">
+        const currentUsername = /*[[${#authentication.name}]]*/ 'repartidor';
+        const tieneRutaAsignada = /*[[${rutaActiva != null}]]*/ false;
+        const tipoRutaActiva = /*[[${rutaActiva != null ? rutaActiva.tipo : 'ENTREGA'}]]*/ 'ENTREGA';
+        const hayEntregas = /*[[${!#lists.isEmpty(rutaEntrega)}]]*/ false;
+        const hayRecogidas = /*[[${!#lists.isEmpty(rutaRecogida)}]]*/ false;
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+        function buildHeaders(extra) {
+            const h = Object.assign({}, extra || {});
+            if (csrfToken && csrfHeader) h[csrfHeader] = csrfToken;
+            return h;
+        }
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // --- MAPA DESPLEGABLE DE LA RUTA ASIGNADA ---
+        let driverMap = null;
+        let driverRouteLayer = null;
+        let driverMarkersLayer = null;
+        let driverGpsMarker = null;
+        let mapaDesplegado = false;
+
+        async function toggleMapaRutaAsignada(forzarAbrir) {
+            const box = document.getElementById('mapaRutaAsignadaBox');
+            const btnText = document.getElementById('btnDesplegarMapaTexto');
+            if (!box) return;
+
+            const abrir = forzarAbrir === true ? true : !mapaDesplegado;
+            mapaDesplegado = abrir;
+            box.style.display = abrir ? 'block' : 'none';
+            if (btnText) {
+                btnText.textContent = abrir ? 'OCULTAR MAPA DE RUTA' : 'DESPLEGAR MAPA DE LA RUTA ASIGNADA';
+            }
+            if (abrir) {
+                await cargarYRenderizarMapaRuta();
+            }
+        }
+
+        async function cargarYRenderizarMapaRuta() {
+            try {
+                const res = await fetch('/reparto/ruta-activa');
+                const ruta = await res.json();
+                if (!ruta || ruta.activa === false) return;
+
+                if (!driverMap) {
+                    driverMap = L.map('driverRouteMap').setView([ruta.hubLat || 4.6097, ruta.hubLon || -74.0817], 11);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap'
+                    }).addTo(driverMap);
+                    driverMarkersLayer = L.layerGroup().addTo(driverMap);
+                }
+
+                setTimeout(() => driverMap.invalidateSize(), 120);
+                driverMarkersLayer.clearLayers();
+                if (driverRouteLayer) {
+                    driverMap.removeLayer(driverRouteLayer);
+                    driverRouteLayer = null;
+                }
+
+                const bounds = [];
+                if (ruta.hubLat != null && ruta.hubLon != null) {
+                    L.marker([ruta.hubLat, ruta.hubLon], {
+                        icon: L.divIcon({
+                            className: '',
+                            html: '<div class="marker-pin marker-hub">0</div>',
+                            iconSize: [30, 30], iconAnchor: [15, 15]
+                        })
+                    }).bindPopup(`<strong>🏢 HUB SALIDA: ${escapeHtml(ruta.capitalHub)}</strong>`).addTo(driverMarkersLayer);
+                    bounds.push([ruta.hubLat, ruta.hubLon]);
+                }
+
+                const fallbackCoords = [];
+                if (ruta.hubLat != null && ruta.hubLon != null) fallbackCoords.push([ruta.hubLat, ruta.hubLon]);
+
+                (ruta.paradas || []).forEach((p, idx) => {
+                    const lat = p.latDestino ?? p.ciudadLat;
+                    const lon = p.lonDestino ?? p.ciudadLon;
+                    if (lat == null || lon == null) return;
+
+                    const num = p.ordenEntrega || (idx + 1);
+                    const done = p.estado === 'Entregado' || (ruta.tipo === 'RECOGIDA' && (p.estado === 'Recogido' || p.estado === 'En Sucursal'));
+                    const fail = p.estado === 'Novedad' || p.estado === 'No Recogido';
+                    const cls = done ? 'marker-stop-done' : (fail ? 'marker-stop-novedad' : 'marker-stop');
+                    const label = done ? '✓' : String(num);
+
+                    const gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(lat + ',' + lon)}`;
+                    const wazeUrl = `https://waze.com/ul?ll=${encodeURIComponent(lat + ',' + lon)}&navigate=yes`;
+                    L.marker([lat, lon], {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `<div class="marker-pin ${cls}">${label}</div>`,
+                            iconSize: [26, 26], iconAnchor: [13, 13]
+                        })
+                    }).bindPopup(
+                        `<strong>Parada #${escapeHtml(num)} · SAI-${escapeHtml(p.guiaId)}</strong><br>` +
+                        `${escapeHtml(p.destinatario)}<br>${escapeHtml(p.direccionRecibo)} (${escapeHtml(p.ciudadDestino)})<br>` +
+                        `<span style="font-weight:700;">Estado: ${escapeHtml(p.estado)}</span><br>` +
+                        `<a href="${gmapsUrl}" target="_blank" style="color:#0f766e;font-weight:700;">Google Maps</a> · ` +
+                        `<a href="${wazeUrl}" target="_blank" style="color:#0369a1;font-weight:700;">Waze</a>`
+                    ).addTo(driverMarkersLayer);
+
+                    bounds.push([lat, lon]);
+                    fallbackCoords.push([lat, lon]);
+                });
+
+                let drawn = false;
+                if (ruta.geometriaJson && ruta.geometriaJson.trim().startsWith('{')) {
+                    try {
+                        const geom = JSON.parse(ruta.geometriaJson);
+                        if (geom && geom.type) {
+                            driverRouteLayer = L.geoJSON(geom, {
+                                style: { color: '#0284C7', weight: 5, opacity: 0.9 }
+                            }).addTo(driverMap);
+                            driverMap.fitBounds(driverRouteLayer.getBounds(), { padding: [30, 30] });
+                            drawn = true;
+                        }
+                    } catch (_) {}
+                }
+                if (!drawn && fallbackCoords.length > 1) {
+                    driverRouteLayer = L.polyline(fallbackCoords, { color: '#0284C7', weight: 4, dashArray: '6,6' }).addTo(driverMap);
+                }
+                if (!drawn && bounds.length > 0) {
+                    driverMap.fitBounds(bounds, { padding: [30, 30] });
+                }
+            } catch (e) {
+                console.error('Error cargando mapa de ruta:', e);
+            }
+        }
+
+        // --- EMPEZAR RUTA + GPS TRACKING ---
+        let stompClient = null;
+        let watchId = null;
+        let isTracking = false;
+        const btnGlobal = document.getElementById('btnGlobalTracking');
+        const statusGlobal = document.getElementById('trackingStatus');
+        const statusText = document.getElementById('trackingStatusText');
+
+        async function manejarEmpezarRuta() {
+            if (isTracking) {
+                stopGlobalTracking();
+                return;
+            }
+
+            if (tieneRutaAsignada) {
+                try {
+                    const res = await fetch('/reparto/iniciar-ruta', {
+                        method: 'POST',
+                        headers: buildHeaders()
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const badge = document.getElementById('rutaEstadoBadge');
+                        if (badge) {
+                            badge.textContent = 'EN_CURSO';
+                            badge.className = 'route-badge route-badge-en_curso';
+                        }
+                        if (!data.sinRuta) {
+                            await toggleMapaRutaAsignada(true);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('No se pudo actualizar estado de ruta:', e);
+                }
+            }
+
+            startGlobalTracking();
+        }
+
+        function startGlobalTracking() {
+            if (!navigator.geolocation) {
+                statusGlobal.style.display = 'block';
+                statusText.textContent = 'RUTA INICIADA (GPS no soportado en este navegador)';
+                return;
+            }
+
+            const socket = new SockJS('/ws-tracking');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null;
+            btnGlobal.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>CONECTANDO GPS...</span>';
+
+            stompClient.connect({}, function () {
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        stompClient.send('/app/track/driver', {}, JSON.stringify({
+                            username: currentUsername,
+                            latitud: lat,
+                            longitud: lon
+                        }));
+
+                        isTracking = true;
+                        btnGlobal.style.background = '#ef4444';
+                        btnGlobal.style.boxShadow = '0 4px 10px rgba(239, 68, 68, 0.3)';
+                        btnGlobal.innerHTML = '<i class="fa-solid fa-stop"></i> <span>DETENER GPS EN VIVO</span>';
+                        statusGlobal.style.display = 'block';
+                        statusText.textContent = 'TRANSMITIENDO UBICACIÓN EN VIVO...';
+
+                        if (driverMap) {
+                            if (!driverGpsMarker) {
+                                driverGpsMarker = L.marker([lat, lon], {
+                                    icon: L.divIcon({ className: '', html: '<div class="driver-gps-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] })
+                                }).addTo(driverMap).bindPopup('Tu ubicación actual');
+                            } else {
+                                driverGpsMarker.setLatLng([lat, lon]);
+                            }
+                        }
+                    },
+                    () => {
+                        btnGlobal.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> <span>REINTENTAR GPS</span>';
+                        statusGlobal.style.display = 'block';
+                        statusText.textContent = 'RUTA ACTIVA · Activa el permiso de ubicación para transmitir GPS.';
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            }, function () {
+                btnGlobal.innerHTML = '<i class="fa-solid fa-play"></i> <span>RUTA ACTIVA (SIN GPS WS)</span>';
+            });
+        }
+
+        function stopGlobalTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (stompClient !== null) {
+                stompClient.disconnect();
+                stompClient = null;
+            }
+            isTracking = false;
+            btnGlobal.style.background = '#10B981';
+            btnGlobal.style.boxShadow = '0 4px 10px rgba(16, 185, 129, 0.3)';
+            btnGlobal.innerHTML = '<i class="fa-solid fa-play"></i> <span>EMPEZAR RUTA</span>';
+            statusGlobal.style.display = 'none';
+        }
+
+        function confirmarCierreRuta(form) {
+            return confirm('¿Deseas finalizar y cerrar esta ruta multi-parada?');
+        }
+
+        // --- TABS Y FILTRO REGIONAL ---
+        let tabActual = 'entrega';
+
+        function cambiarTab(tab) {
+            tabActual = tab;
+            document.getElementById('panelEntrega').style.display = tab === 'entrega' ? 'block' : 'none';
+            document.getElementById('panelRecogida').style.display = tab === 'recogida' ? 'block' : 'none';
+            document.getElementById('tabEntregaBtn').classList.toggle('active', tab === 'entrega');
+            document.getElementById('tabRecogidaBtn').classList.toggle('active', tab === 'recogida');
+
+            document.querySelectorAll('.opt-reg-entrega').forEach(o => o.style.display = tab === 'entrega' ? '' : 'none');
+            document.querySelectorAll('.opt-reg-recogida').forEach(o => o.style.display = tab === 'recogida' ? '' : 'none');
+            document.getElementById('regionFilter').value = 'TODAS';
+            filtrarPorRegion();
+        }
+
+        function filtrarPorRegion() {
+            const region = document.getElementById('regionFilter').value;
+            const selector = tabActual === 'entrega' ? '.entrega-card' : '.recogida-card';
+            document.querySelectorAll(selector).forEach(card => {
+                const cardReg = card.getAttribute('data-region') || '';
+                card.style.display = (region === 'TODAS' || cardReg.toLowerCase() === region.toLowerCase()) ? 'block' : 'none';
+            });
+        }
+
+        // --- FIRMA DIGITAL ---
+        const modal = document.getElementById('deliveryModal');
+        const canvas = document.getElementById('signature-pad');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = 190 * ratio;
+            ctx.scale(ratio, ratio);
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#002e7d';
+        }
+        window.addEventListener('resize', resizeCanvas);
+        setTimeout(resizeCanvas, 100);
+
+        function startDrawing(e) { drawing = true; draw(e); }
+        function endDrawing() { drawing = false; ctx.beginPath(); }
+        function draw(e) {
+            if (!drawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX !== undefined ? e.clientX : e.touches[0].clientX;
+            const clientY = e.clientY !== undefined ? e.clientY : e.touches[0].clientY;
+            ctx.lineTo(clientX - rect.left, clientY - rect.top);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(clientX - rect.left, clientY - rect.top);
+        }
+
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        window.addEventListener('mouseup', endDrawing);
+        window.addEventListener('touchend', endDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); }, { passive: false });
+
+        function clearSignature() { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+        function openDeliveryModal(id) {
+            document.getElementById('guiaIdInput').value = id;
+            document.getElementById('modalTracking').innerText = 'GUÍA SAI-' + id;
+            modal.style.display = 'flex';
+            resizeCanvas();
+        }
+        function closeModal() { modal.style.display = 'none'; clearSignature(); }
+
+        function submitDelivery() {
+            const signatureData = canvas.toDataURL('image/jpeg', 0.5);
+            if (signatureData.length < 2000) {
+                alert('⚠️ Por favor, solicite la firma del destinatario antes de confirmar.');
+                return;
+            }
+            const btn = document.querySelector('#deliveryModal .m-confirm');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> PROCESANDO...';
+            btn.disabled = true;
+            document.getElementById('firmaInput').value = signatureData;
+            document.getElementById('deliveryForm').submit();
+        }
+
+        // --- NOVEDADES ---
+        function openNovedadModal(id) {
+            document.getElementById('novedadGuiaIdInput').value = id;
+            document.getElementById('modalNovedadTracking').innerText = 'GUÍA SAI-' + id;
+            document.getElementById('novedadMotivoInput').value = '';
+            document.getElementById('novedadModal').style.display = 'flex';
+        }
+        function closeNovedadModal() { document.getElementById('novedadModal').style.display = 'none'; }
+        function seleccionarMotivo(texto) {
+            document.getElementById('novedadMotivoInput').value = texto;
+        }
+
+        function openNoRecogidoModal(id) {
+            document.getElementById('noRecogidoGuiaIdInput').value = id;
+            document.getElementById('modalNoRecogidoTracking').innerText = 'RECOGIDA · GUÍA SAI-' + id;
+            document.getElementById('noRecogidoMotivoInput').value = '';
+            document.getElementById('noRecogidoModal').style.display = 'flex';
+        }
+        function closeNoRecogidoModal() { document.getElementById('noRecogidoModal').style.display = 'none'; }
+        function seleccionarMotivoNoRecogido(texto) {
+            document.getElementById('noRecogidoMotivoInput').value = texto;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (tipoRutaActiva === 'RECOGIDA' || (!hayEntregas && hayRecogidas)) {
+                cambiarTab('recogida');
+            }
+        });
+
+        // --- ESTADO OPERATIVO CON CSRF ---
+        function updateStatus(id, newStatus, openSingleMap) {
+            const params = new URLSearchParams();
+            params.append('id', id);
+            params.append('estado', newStatus);
+
+            fetch('/reparto/actualizar-estado', {
+                method: 'POST',
+                headers: buildHeaders({
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                }),
+                body: params.toString(),
+                credentials: 'same-origin'
+            }).then(async res => {
+                const data = (await res.text()).trim();
+                if (res.ok && data === 'OK') {
+                    if (openSingleMap) {
+                        window.location.href = '/reparto/mapa/' + id;
+                    } else {
+                        location.reload();
+                    }
+                    return;
+                }
+                if (res.redirected && res.url && res.url.includes('/login')) {
+                    alert('Tu sesión expiró o iniciaste sesión con otro usuario en otra pestaña. Inicia sesión nuevamente.');
+                    window.location.href = '/login';
+                    return;
+                }
+                if (res.status === 403 && data !== 'FORBIDDEN') {
+                    alert('Sesión o token de seguridad desactualizado (403). Se recargará la página.');
+                    location.reload();
+                    return;
+                }
+                const mensajes = {
+                    'NOT_FOUND': 'La guía #' + id + ' no fue encontrada.',
+                    'FORBIDDEN': 'No tienes permiso para modificar la guía #' + id + '.',
+                    'INVALID_STATUS': 'Estado no permitido: ' + newStatus,
+                    'INVALID_TRANSITION': 'No se puede pasar la guía #' + id + ' a "' + newStatus + '" desde su estado actual. Recarga la página.'
+                };
+                alert(mensajes[data] || ('No se pudo actualizar el estado (' + res.status + '): ' + data.slice(0, 180)));
+            }).catch(err => {
+                alert('Error de conexión al actualizar el estado: ' + err.message);
+            });
+        }
+    </script>
+</body>
+</html>

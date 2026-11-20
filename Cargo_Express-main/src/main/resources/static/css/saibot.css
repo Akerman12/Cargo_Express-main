@@ -1,0 +1,265 @@
+:root {
+    --sai-bot-primary: #002e7d;
+    --sai-bot-accent: #ff6b00;
+    --sai-bot-bg: rgba(255, 255, 255, 0.95);
+    --sai-bot-text: #1e293b;
+    --sai-bot-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+#sai-bot-container {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 9999;
+    font-family: 'Inter', 'Poppins', sans-serif;
+}
+
+#sai-bot-button {
+    width: 65px;
+    height: 65px;
+    background: var(--sai-bot-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(0, 46, 125, 0.4);
+    transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+}
+
+#sai-bot-button:hover {
+    transform: scale(1.1) rotate(10deg);
+}
+
+.sai-bot-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--sai-bot-accent);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 3px solid white;
+    animation: pulseBot 2s infinite;
+}
+
+@keyframes pulseBot {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+#sai-bot-window {
+    position: absolute;
+    bottom: 85px;
+    right: 0;
+    width: 380px;
+    height: 550px;
+    background: var(--sai-bot-bg);
+    backdrop-filter: blur(15px);
+    border-radius: 24px;
+    box-shadow: var(--sai-bot-shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px) scale(0.9);
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+#sai-bot-window.active {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: all;
+}
+
+.sai-bot-header {
+    background: var(--sai-bot-primary);
+    padding: 25px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.sai-bot-header img {
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    background: white;
+    padding: 5px;
+}
+
+.sai-bot-header h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.sai-bot-header p {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin: 0;
+}
+
+.sai-bot-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scroll-behavior: smooth;
+}
+
+.msg {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    animation: msgIn 0.3s ease-out;
+}
+
+@keyframes msgIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.msg-bot {
+    background: #f1f5f9;
+    color: var(--sai-bot-text);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.msg-user {
+    background: var(--sai-bot-primary);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.sai-bot-footer {
+    padding: 15px 20px 25px;
+    background: white;
+    border-top: 1px solid #f1f5f9;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.quick-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 8px 12px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--sai-bot-primary);
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.quick-btn:hover {
+    background: var(--sai-bot-primary);
+    color: white;
+    border-color: var(--sai-bot-primary);
+}
+
+.sai-bot-input {
+    display: flex;
+    gap: 10px;
+}
+
+.sai-bot-input input {
+    flex: 1;
+    border: 2px solid #f1f5f9;
+    padding: 12px 18px;
+    border-radius: 14px;
+    outline: none;
+    font-size: 0.9rem;
+    transition: 0.3s;
+}
+
+.sai-bot-input input:focus {
+    border-color: var(--sai-bot-primary);
+}
+
+.sai-bot-input button {
+    background: var(--sai-bot-primary);
+    color: white;
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.sai-bot-input button:hover {
+    background: var(--sai-bot-accent);
+    transform: rotate(10deg);
+}
+
+.typing {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    display: none;
+}
+
+
+/* =====================================
+   AJUSTE DE TIPOGRAFIA SAI-BOT
+   ===================================== */
+
+/* Texto general del chat */
+#sai-bot-window {
+    font-size: 14px;
+}
+
+/* Mensajes del cliente y del asistente */
+#sai-bot-window .msg {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    padding: 12px 15px;
+}
+
+/* Encabezado */
+#sai-bot-window .sai-bot-header h3 {
+    font-size: 17px !important;
+}
+
+#sai-bot-window .sai-bot-header p {
+    font-size: 12px !important;
+}
+
+/* Botones de preguntas rápidas */
+#sai-bot-window .quick-btn {
+    font-size: 12px !important;
+}
+
+/* Campo donde escribe el cliente */
+#sai-bot-window .sai-bot-input input {
+    font-size: 14px !important;
+}
+
+/* Botón de enviar */
+#sai-bot-window .sai-bot-input button {
+    font-size: 14px !important;
+}
+
+/* Indicador de escritura */
+#sai-bot-window .typing {
+    font-size: 12px !important;
+}
