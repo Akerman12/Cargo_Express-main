@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analítica Power BI | SAI CARGO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/jpg" th:href="@{/imagenes/LOGO Cargo Expres.jpg}">
+    <link rel="stylesheet" th:href="@{/css/sai-theme.css}">
+    <style>
+        .powerbi-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-sai {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: var(--white);
+            color: var(--brand-blue);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            box-shadow: var(--shadow-sm);
+            transition: 0.2s ease;
+        }
+
+        .btn-sai:hover {
+            border-color: var(--brand-blue);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-sai-primary {
+            background: var(--brand-blue);
+            color: var(--white);
+            border-color: var(--brand-blue);
+        }
+
+        .btn-sai-primary:hover {
+            background: var(--brand-blue-light);
+            color: var(--white);
+        }
+
+        .powerbi-card {
+            background: var(--white);
+            border-radius: 18px;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .powerbi-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .powerbi-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .powerbi-meta {
+            font-size: 12.5px;
+            color: var(--text-muted);
+        }
+
+        .powerbi-frame-wrap {
+            position: relative;
+            width: 100%;
+            height: min(76vh, 760px);
+            min-height: 460px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #F8FAFC;
+            border: 1px solid var(--border-light);
+        }
+
+        .powerbi-frame-wrap iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .powerbi-frame-wrap {
+                height: 62vh;
+                min-height: 360px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div th:replace="~{fragments/sai-sidebar :: sidebar('powerbi')}"></div>
+
+    <main class="main-content">
+        <div class="top-header">
+            <div class="header-title">
+                <h1><i class="fa-solid fa-chart-column" style="color: var(--brand-orange); margin-right: 8px;"></i>Analítica Power BI</h1>
+                <p>Tablero ejecutivo interactivo de Cargo Express conectado al reporte publicado en Power BI.</p>
+            </div>
+
+            <div class="powerbi-actions">
+                <button type="button" class="btn-sai" onclick="togglePowerBiFullscreen()">
+                    <i class="fa-solid fa-expand"></i> <span>Pantalla Completa</span>
+                </button>
+                <a class="btn-sai btn-sai-primary"
+                   href="https://app.powerbi.com/view?r=eyJrIjoiNTU3NGZlNzItMjk0Yi00NGNiLTgzYzEtYmM2ZWMyYjdlNmUxIiwidCI6IjlkMTJiZjNmLWU0ZjYtNDdhYi05MTJmLTFhMmYwZmM0OGFhNCIsImMiOjR9"
+                   target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>Abrir en Pestaña Nueva</span>
+                </a>
+            </div>
+        </div>
+
+        <section class="powerbi-card">
+            <div class="powerbi-toolbar">
+                <span class="powerbi-badge">
+                    <i class="fa-solid fa-chart-pie"></i> Reporte CargoExpress — Vista Administrador
+                </span>
+                <span class="powerbi-meta">
+                    Sesión: <strong th:text="${adminEmail}">admin@saicargo.com</strong>
+                </span>
+            </div>
+
+            <div class="powerbi-frame-wrap" id="powerbiFrameWrap">
+                <iframe title="CargoExpress"
+                        width="600"
+                        height="373.5"
+                        src="https://app.powerbi.com/view?r=eyJrIjoiNTU3NGZlNzItMjk0Yi00NGNiLTgzYzEtYmM2ZWMyYjdlNmUxIiwidCI6IjlkMTJiZjNmLWU0ZjYtNDdhYi05MTJmLTFhMmYwZmM0OGFhNCIsImMiOjR9"
+                        frameborder="0"
+                        allowFullScreen="true"></iframe>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function togglePowerBiFullscreen() {
+            const container = document.getElementById('powerbiFrameWrap');
+            if (!container) return;
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else if (container.requestFullscreen) {
+                container.requestFullscreen();
+            }
+        }
+    </script>
+</body>
+</html>
+

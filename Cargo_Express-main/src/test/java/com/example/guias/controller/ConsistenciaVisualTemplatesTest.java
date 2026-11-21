@@ -12,7 +12,9 @@ import com.example.guias.service.WekaService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +31,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(controllers = {ClienteController.class, MenuController.class, AdminController.class})
 class ConsistenciaVisualTemplatesTest {
+
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityConfig {
+    }
 
     @Autowired private MockMvc mockMvc;
 
@@ -56,7 +63,8 @@ class ConsistenciaVisualTemplatesTest {
                 .andExpect(content().string(containsString("id=\"saiSidebar\"")))
                 .andExpect(content().string(containsString("Mi Portal")))
                 .andExpect(content().string(containsString("Mis Direcciones")))
-                .andExpect(content().string(not(containsString("/admin/vehiculos"))));
+                .andExpect(content().string(not(containsString("/admin/vehiculos"))))
+                .andExpect(content().string(not(containsString("/admin/powerbi"))));
     }
 
     @Test
@@ -71,7 +79,34 @@ class ConsistenciaVisualTemplatesTest {
                 .andExpect(content().string(containsString("/admin/rutas")))
                 .andExpect(content().string(containsString("/admin/vehiculos")))
                 .andExpect(content().string(containsString("/pago/admin/ver")))
+                .andExpect(content().string(containsString("/admin/powerbi")))
                 .andExpect(content().string(containsString("/admin/warroom")));
+    }
+
+    @Test
+    @WithMockUser(username = "admin@saicargo.com", roles = "ADMIN")
+    void adminPowerBi_renderizaIframeParaAdmin() throws Exception {
+        mockMvc.perform(get("/admin/powerbi"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/css/sai-theme.css")))
+                .andExpect(content().string(containsString("id=\"saiSidebar\"")))
+                .andExpect(content().string(containsString("title=\"CargoExpress\"")))
+                .andExpect(content().string(containsString(
+                        "https://app.powerbi.com/view?r=eyJrIjoiNTU3NGZlNzItMjk0Yi00NGNiLTgzYzEtYmM2ZWMyYjdlNmUxIiwidCI6IjlkMTJiZjNmLWU0ZjYtNDdhYi05MTJmLTFhMmYwZmM0OGFhNCIsImMiOjR9")));
+    }
+
+    @Test
+    @WithMockUser(username = "cli@x.com", roles = "CLIENTE")
+    void adminPowerBi_deniegaAccesoACliente() throws Exception {
+        mockMvc.perform(get("/admin/powerbi"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "rep@x.com", roles = "REPARTIDOR")
+    void adminPowerBi_deniegaAccesoARepartidor() throws Exception {
+        mockMvc.perform(get("/admin/powerbi"))
+                .andExpect(status().isForbidden());
     }
 
     @Test

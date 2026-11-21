@@ -219,4 +219,10 @@ public class AdminController {
         model.addAttribute("ciudades", ciudades);
         return "admin-weka-models";
     }
+
+    @GetMapping("/powerbi")
+    public String mostrarPowerBi(Model model, org.springframework.security.core.Authentication auth) {
+        model.addAttribute("adminEmail", auth != null ? auth.getName() : "admin@saicargo.com");
+        return "admin-powerbi";
+    }
 }

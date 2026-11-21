@@ -106,6 +106,9 @@
             <a th:href="@{/pago/admin/ver}" th:classappend="${activePage == 'pagos'} ? 'active' : ''">
                 <i class="fa-solid fa-file-invoice-dollar"></i> <span>Auditoría de Pagos</span>
             </a>
+            <a th:href="@{/admin/powerbi}" th:classappend="${activePage == 'powerbi'} ? 'active' : ''">
+                <i class="fa-solid fa-chart-column"></i> <span>Analítica Power BI</span>
+            </a>
             <a th:href="@{/admin/warroom}" class="btn-warroom">
                 <i class="fa-solid fa-satellite-dish"></i> <span>WAR ROOM (LIVE)</span>
             </a>
